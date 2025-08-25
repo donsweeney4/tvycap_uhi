@@ -17,7 +17,8 @@ import { handleStart, stopSampling, confirmAndClearDatabase } from "./functions"
 import { uploadDataIfAllowed, uploadDDataIfAllowed} from "./functionsS3";
 import { showToastAsync } from "./functionsHelper";
 import { VERSION } from "./constants";
-import { SimConfig } from "./utils/SimConfig"; // ← added for Simulation Mode persistence
+import { setSimulationEnabled } from "./utils/ble";
+
 
 export default function MainScreen1() {
   const [deviceName, setDeviceName] = useState(null);
@@ -86,14 +87,8 @@ export default function MainScreen1() {
       } catch (error) {
         console.error("❌ Error loading settings:", error);
       }
-
-      // reflect persisted Simulation Mode (if previously enabled)
-      try {
-        const enabled = await SimConfig.isEnabled();
-        setSimUnlocked(!!enabled);
-      } catch (e) {
-        // ignore
-      }
+      setSimUnlocked(false); // always start off when the screen is focused
+    
     });
 
     return unsubscribe;
@@ -113,10 +108,9 @@ export default function MainScreen1() {
     const n = tapCount + 1;
     setTapCount(n);
     if (n >= 7) {
-      setSimUnlocked(true);
-      await SimConfig.setEnabled(true); // persist ON so BLE facade can switch to mock on next usage
-      showToastAsync("✅ Simulation Mode enabled", 2000);
-    }
+       setSimulationEnabled(true); // enables sim for this session
+       showToastAsync("✅ Simulation Mode enabled", 2000);
+}
   };
 
   useKeepAwake();
