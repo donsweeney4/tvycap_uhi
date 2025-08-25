@@ -12,13 +12,12 @@ import * as FileSystem from "expo-file-system";
 import * as SecureStore from "expo-secure-store";
 import { Button } from 'react-native-elements';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import Toast from 'react-native-root-toast';
-
 import { bleState } from "./utils/bleState";
 import { handleStart, stopSampling, confirmAndClearDatabase } from "./functions";
 import { uploadDatabaseToS3 } from "./functionsS3";
 import { showToastAsync } from "./functionsHelper";
 import { VERSION } from "./constants";
+import { SimConfig } from "./utils/SimConfig"; // ← added for Simulation Mode persistence
 
 export default function MainScreen1() {
   const [deviceName, setDeviceName] = useState(null);
@@ -29,6 +28,10 @@ export default function MainScreen1() {
   const [iconType, setIconType] = useState(null);
   const [iconVisible, setIconVisible] = useState(false);
 
+  // Hidden unlock for Simulation Mode
+  const [tapCount, setTapCount] = useState(0);
+  const [simUnlocked, setSimUnlocked] = useState(false);
+
   const navigation = useNavigation();
   const deviceNameRef = useRef(null);
   const jobcodeRef = useRef(null);
@@ -38,6 +41,7 @@ export default function MainScreen1() {
   const logoWidth = width * 0.15;
   const logoHeight = height * 0.15;
 
+  // On focus, load settings and also reflect persisted Simulation Mode state
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", async () => {
       console.log("MainScreen L1: Focus event triggered");
@@ -82,12 +86,18 @@ export default function MainScreen1() {
       } catch (error) {
         console.error("❌ Error loading settings:", error);
       }
+
+      // reflect persisted Simulation Mode (if previously enabled)
+      try {
+        const enabled = await SimConfig.isEnabled();
+        setSimUnlocked(!!enabled);
+      } catch (e) {
+        // ignore
+      }
     });
 
     return unsubscribe;
   }, [navigation]);
-
- 
 
   useEffect(() => {
     console.log("MainScreen L4: Setting dummyState for bleState");
@@ -97,6 +107,18 @@ export default function MainScreen1() {
     if (!bleState.dbRef) bleState.dbRef = { current: null };
   }, []);
 
+  // Hidden unlock: tap Version text 7 times to enable Simulation Mode
+  const onVersionTap = async () => {
+    if (simUnlocked) return; // already unlocked
+    const n = tapCount + 1;
+    setTapCount(n);
+    if (n >= 7) {
+      setSimUnlocked(true);
+      await SimConfig.setEnabled(true); // persist ON so BLE facade can switch to mock on next usage
+      showToastAsync("✅ Simulation Mode enabled", 2000);
+    }
+  };
+
   useKeepAwake();
 
   return (
@@ -104,7 +126,17 @@ export default function MainScreen1() {
       <Text style={styles.header}>TriValley Youth</Text>
       <Text style={styles.header}>Climate Action Program</Text>
       <Text style={styles.title}>UHI Sensor</Text>
-      <Text style={styles.version}>Version: {VERSION}</Text>
+
+      {/* Tap 7× on Version to unlock Simulation Mode */}
+      <Text style={styles.version} onPress={onVersionTap}>
+        Version: {VERSION}
+      </Text>
+
+      {simUnlocked && (
+        <Text style={{ fontSize: 14, color: "green", marginBottom: 6 }}>
+          Simulation Mode Enabled
+        </Text>
+      )}
 
       <Text style={styles.status}>
         Sensor: {deviceName || "(no name)"}{"\n"}
@@ -180,8 +212,6 @@ export default function MainScreen1() {
         }}
       />
 
-      
-
       <Image
         source={require("./assets/icon.png")}
         style={[styles.logo, { width: logoWidth, height: logoHeight }]}
@@ -189,30 +219,23 @@ export default function MainScreen1() {
       />
       <Text style={styles.questname}>Quest Science Center{"\n"}Livermore, CA</Text>
 
-      {/* Moved icon display to end to avoid toast overlap */}
-
-    
-    {iconVisible && (
-  <View style={styles.iconContainer}>
-    {iconType === 'red' && (
-      <>
-        
-        <Text style={styles.errorText}>Temperature sensor not connected!</Text>
-         <Text style={styles.errorText}>Push start to try to reconnect & resume!</Text>
-        <Icon name="error" size={50} color="red" />
-      </>
-    )}
-    {iconType === 'green' && (
-      <>
-      <Text style={styles.errorText}>Data sample saved!</Text>
-      <Icon name="check-circle" size={50} color="green" />
-      </>
-    )}
-  </View>
-)}
-
-      
-
+      {iconVisible && (
+        <View style={styles.iconContainer}>
+          {iconType === 'red' && (
+            <>
+              <Text style={styles.errorText}>Temperature sensor not connected!</Text>
+              <Text style={styles.errorText}>Push start to try to reconnect & resume!</Text>
+              <Icon name="error" size={50} color="red" />
+            </>
+          )}
+          {iconType === 'green' && (
+            <>
+              <Text style={styles.errorText}>Data sample saved!</Text>
+              <Icon name="check-circle" size={50} color="green" />
+            </>
+          )}
+        </View>
+      )}
     </View>
   );
 }
@@ -282,5 +305,12 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     marginBottom: 20,
     alignItems: "center",
-  }
+  },
+  // added to avoid undefined style reference
+  errorText: {
+    fontSize: 16,
+    color: "black",
+    marginBottom: 4,
+    textAlign: "center",
+  },
 });

@@ -12,6 +12,7 @@ export async function requestBluetoothPermissions() {
       }
     );
 
+    
     const grantedConnect = await PermissionsAndroid.request(
       PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
       {

@@ -2,7 +2,10 @@ import { Alert, Platform, PermissionsAndroid } from "react-native";
 import * as Location from "expo-location";
 import * as FileSystem from "expo-file-system";
 import * as SQLite from "expo-sqlite";
-import { BleManager } from "react-native-ble-plx";
+
+// Use facade: real manager or mock manager decided at runtime
+import { getBLEManager, inSimulation } from "./utils/ble";
+
 import { atob } from "react-native-quick-base64";
 import { Buffer } from "buffer";
 import * as SecureStore from "expo-secure-store";
@@ -10,8 +13,12 @@ import { SERVICE_UUID, CHARACTERISTIC_UUID} from "./constants";
 import { showToastAsync } from "./functionsHelper";
 import { bleState } from "./utils/bleState";
 
-const manager = new BleManager();
-bleState.manager = manager;
+async function ensureManager() {
+  if (!bleState.manager) {
+    bleState.manager = await getBLEManager();
+  }
+  return bleState.manager;
+}
 
 const THROTTLE_ERROR_TOAST_INTERVAL_MS = 5000;
 
@@ -110,7 +117,7 @@ export const openDatabaseConnection = async () => { // Exported for use in Setti
      
 export const handleStart = async (deviceName, setCounter, setTemperature, setAccuracy,
   setIconType,setIconVisible )   => { // setIconType and setIconVisible are correctly here
-
+  await ensureManager();
   console.log(`🚀 handleStart triggered, Campaign & sensor: ${deviceName}`);
 
   const { status } = await Location.requestForegroundPermissionsAsync();
@@ -214,6 +221,7 @@ export const handleStart = async (deviceName, setCounter, setTemperature, setAcc
 //#2. ConnectToPairedSensor: Connect to sensor device and check characteristic
 
 export const ConnectToPairedSensor = async (scanTimeout = 10000) => {
+  await ensureManager();
   return new Promise(async (resolve, reject) => {
     let isMatchingInProgress = false;
     let resolved = false;
@@ -733,6 +741,7 @@ export const clearDatabase = async (setDummyState, setCounter) => {
 
 
 export const GetPairedSensorName = async (scanTimeout = 10000) => {
+  await ensureManager();
   return new Promise(async (resolve, reject) => {
     console.log("🔍 Starting GetPairedSensorName() ...");
     console.log("📱 Platform:", Platform.OS);
