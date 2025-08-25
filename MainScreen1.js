@@ -14,7 +14,7 @@ import { Button } from 'react-native-elements';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { bleState } from "./utils/bleState";
 import { handleStart, stopSampling, confirmAndClearDatabase } from "./functions";
-import { uploadDatabaseToS3 } from "./functionsS3";
+import { uploadDataIfAllowed, uploadDDataIfAllowed} from "./functionsS3";
 import { showToastAsync } from "./functionsHelper";
 import { VERSION } from "./constants";
 import { SimConfig } from "./utils/SimConfig"; // ← added for Simulation Mode persistence
@@ -194,7 +194,7 @@ export default function MainScreen1() {
             return;
           }
           const currentDbFilePath = `${FileSystem.documentDirectory}SQLite/appData.db`;
-          uploadDatabaseToS3(currentDbFilePath, jobcodeRef, deviceNameRef);
+          uploadDataIfAllowed(currentDbFilePath, jobcodeRef, deviceNameRef);
         }}
       />
 

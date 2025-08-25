@@ -6,9 +6,19 @@ import { showToastAsync } from './functionsHelper'; // For success toasts
 // Assuming these are exported from functions.js
 import { displayErrorToast, openDatabaseConnection } from './functions'; // Import openDatabaseConnection
 import { bleState } from "./utils/bleState";
+import { inSimulation } from "./utils/ble";
 
 // The local declaration of openDatabaseConnection has been removed.
 // It is now expected to be imported from './functions'.
+
+// Guarded upload: skips when Simulation Mode is ON
+export const uploadDataIfAllowed = async (dbPath, jobcodeRef, deviceNameRef) => {
+  if (await inSimulation()) {
+    await showToastAsync("Simulation Mode: upload disabled (no data sent).", 2500);
+    return;
+  }
+  return uploadDatabaseToS3(dbPath, jobcodeRef, deviceNameRef);
+};
 
 
 export const uploadDatabaseToS3 = async (dbFilePath, jobcodeRef, deviceNameRef) => {

@@ -13,6 +13,9 @@ import { SERVICE_UUID, CHARACTERISTIC_UUID} from "./constants";
 import { showToastAsync } from "./functionsHelper";
 import { bleState } from "./utils/bleState";
 
+import { inSimulation } from "./utils/ble";
+import { uploadDatabaseToS3 } from "./functionsS3";
+
 async function ensureManager() {
   if (!bleState.manager) {
     bleState.manager = await getBLEManager();
