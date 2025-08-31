@@ -14,7 +14,7 @@ import { Button } from 'react-native-elements';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { bleState } from "./utils/bleState";
 import { handleStart, stopSampling, confirmAndClearDatabase } from "./functions";
-import { uploadDataIfAllowed, uploadDDataIfAllowed} from "./functionsS3";
+import { exportDatabase } from "./functionsS3";   // ✅ only use exportDatabase
 import { showToastAsync } from "./functionsHelper";
 import { VERSION } from "./constants";
 import { setSimulationEnabled } from "./utils/ble";
@@ -33,9 +33,11 @@ export default function MainScreen1() {
   const [tapCount, setTapCount] = useState(0);
   const [simUnlocked, setSimUnlocked] = useState(false);
 
+  const [userEmail, setUserEmail] = useState(null);   // ✅ track email
   const navigation = useNavigation();
   const deviceNameRef = useRef(null);
   const jobcodeRef = useRef(null);
+  const emailRef = useRef(null);                      // ✅ hold email
   const redirectedRef = useRef(false);
 
   const { width, height } = Dimensions.get("window");
@@ -50,11 +52,13 @@ export default function MainScreen1() {
         const campaignName = await SecureStore.getItemAsync("campaignName");
         const campaignSensorNumber = await SecureStore.getItemAsync("campaignSensorNumber");
         const pairedSensorName = await SecureStore.getItemAsync("pairedSensorName");
+        const storedEmail = await SecureStore.getItemAsync("userEmail");   // ✅ load email
 
         console.log("📦 Focused: retrieved settings:", {
           campaignName,
           campaignSensorNumber,
-          pairedSensorName
+          pairedSensorName,
+          storedEmail,
         });
 
         if (
@@ -84,11 +88,21 @@ export default function MainScreen1() {
             navigation.navigate("Settings");
           }
         }
+
+        // ✅ Handle email
+        if (storedEmail?.trim()) {
+          setUserEmail(storedEmail);
+          emailRef.current = storedEmail;
+          console.log("✅ Loaded user email:", storedEmail);
+        } else {
+          setUserEmail(null);
+          emailRef.current = null;
+        }
+
       } catch (error) {
         console.error("❌ Error loading settings:", error);
       }
       setSimUnlocked(false); // always start off when the screen is focused
-    
     });
 
     return unsubscribe;
@@ -110,7 +124,7 @@ export default function MainScreen1() {
     if (n >= 7) {
        setSimulationEnabled(true); // enables sim for this session
        showToastAsync("✅ Simulation Mode enabled", 2000);
-}
+    }
   };
 
   useKeepAwake();
@@ -177,18 +191,24 @@ export default function MainScreen1() {
         }}
       />
 
+      {/* ✅ Export Data button (email if available, else share) */}
       <Button
-        title="Upload Data"
+        title="Export Data"
         containerStyle={{ width: '35%', marginBottom: 12 }}
         buttonStyle={{ backgroundColor: 'blue', borderRadius: 10 }}
         titleStyle={{ color: 'yellow' }}
         onPress={() => {
           if (!deviceNameRef.current || !jobcodeRef.current) {
-            showToastAsync("❌ Missing metadata. Cannot upload.", 3000);
+            showToastAsync("❌ Missing metadata. Cannot export.", 3000);
             return;
           }
           const currentDbFilePath = `${FileSystem.documentDirectory}SQLite/appData.db`;
-          uploadDataIfAllowed(currentDbFilePath, jobcodeRef, deviceNameRef);
+          exportDatabase(
+            currentDbFilePath,
+            jobcodeRef,
+            deviceNameRef,
+            emailRef.current  // ✅ email if set, null otherwise
+          );
         }}
       />
 
@@ -300,7 +320,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     alignItems: "center",
   },
-  // added to avoid undefined style reference
   errorText: {
     fontSize: 16,
     color: "black",
