@@ -25,6 +25,8 @@ export default function SettingsScreen() {
   const [sensorPaired, setSensorPaired] = useState(false);
   const [dummyState, setDummyState] = useState(0); // Used for force update in clearDatabase, as per original code
   const [counter, setCounter] = useState(0); // Used for force update in clearDatabase, as per original code
+  const [userEmail, setUserEmail] = useState("");   // ✅ new email field
+
 
   const navigation = useNavigation();
 
@@ -32,32 +34,25 @@ export default function SettingsScreen() {
    * Loads saved settings (campaignName and campaignSensorNumber) from SecureStore
    * when the component mounts.
    */
-  const loadSettings = async () => {
-    try {
-      // Check if SecureStore is available on the device
-      if (!(await SecureStore.isAvailableAsync())) {
-        console.error("SecureStore is not available on this device.");
-        return;
-      }
-
-      // Retrieve items from SecureStore
-      const storedCampaignName = await SecureStore.getItemAsync("campaignName");
-      const storedCampaignSensorNumber = await SecureStore.getItemAsync("campaignSensorNumber");
-
-      // Update state if values are found
-      if (storedCampaignName) setCampaignName(storedCampaignName);
-      if (storedCampaignSensorNumber) setCampaignSensorNumber(storedCampaignSensorNumber);
-    } catch (error) {
-      console.error("Error loading settings from SecureStore:", error);
-      // Optionally, show a toast to the user about loading failure
-      showToastAsync("Error loading saved settings.", 2000);
-    }
-  };
-
-  // Effect hook to load settings when the component mounts
   useEffect(() => {
-    loadSettings();
-  }, []);
+      const loadSettings = async () => {
+        try {
+          const storedCampaignName = await SecureStore.getItemAsync("campaignName");
+          const storedCampaignSensorNumber = await SecureStore.getItemAsync("campaignSensorNumber");
+          const storedPairedSensorName = await SecureStore.getItemAsync("pairedSensorName");
+          const storedEmail = await SecureStore.getItemAsync("userEmail");   // ✅ load email
+  
+          if (storedCampaignName) setCampaignName(storedCampaignName);
+          if (storedCampaignSensorNumber) setCampaignSensorNumber(storedCampaignSensorNumber);
+          if (storedPairedSensorName) setPairedSensorName(storedPairedSensorName);
+          if (storedEmail) setUserEmail(storedEmail);   // ✅ load into state
+        } catch (error) {
+          console.error("❌ Error loading settings:", error);
+        }
+      };
+  
+      loadSettings();
+    }, []);
 
   /**
    * Attempts to write a key-value pair to SecureStore with retry logic.
@@ -115,6 +110,16 @@ export default function SettingsScreen() {
       // Attempt to save settings to SecureStore with retry logic
       const savedCampaignName = await writeWithRetry("campaignName", campaignName);
       const savedCampaignSensorNumber = await writeWithRetry("campaignSensorNumber", paddedSensor);
+
+
+
+       if (userEmail?.trim()) {
+        await SecureStore.setItemAsync("userEmail", userEmail.trim());
+      } else {
+        await SecureStore.deleteItemAsync("userEmail");  // ✅ remove if empty
+      }
+
+
 
       // If SecureStore save failed for either item, show error toast and exit
       if (!savedCampaignName || !savedCampaignSensorNumber) {
@@ -211,19 +216,34 @@ export default function SettingsScreen() {
             autoCapitalize="words" // Capitalize first letter of each word
           />
 
-          {/* Sensor Number Input */}
+         {/* Sensor Number Input */}
           <Text style={styles.label}>Set New Integer Sensor Number:</Text>
           <TextInput
             style={styles.input}
             value={campaignSensorNumber}
             onChangeText={(text) =>
-              // Allow only numeric input and limit to 3 characters
+              // Allow onl y numeric input and limit to 3 characters
               setCampaignSensorNumber(text.replace(/[^0-9]/g, "").slice(0, 3))
             }
             placeholder="Your Campaign Member Number"
             keyboardType="numeric" // Numeric keyboard
             maxLength={3} // Ensure maximum 3 digits
           />
+
+          
+
+        {/* Optional email address */}
+          <Text style={styles.label}>Set Optional CampaignEmail Address:</Text>
+          <TextInput
+            style={styles.input}
+            value={userEmail}
+            onChangeText={setUserEmail}
+            placeholder="Campaign Email Address"
+            keyboardType="email-address" // Email keyboard
+          />
+          <Text style={styles.label2}>Leave email blank to use share sheet instead </Text>
+
+
 
           {/* Save Settings Button */}
           <TouchableOpacity
@@ -260,6 +280,13 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     textAlign: "center",
     fontWeight: "600", // Make labels slightly bolder
+    color: "#333", // Darker color for better contrast
+  },
+  label2: {
+    fontSize: 14,
+    marginBottom: 10,
+    textAlign: "center",
+    fontWeight: "400", // Make labels slightly bolder
     color: "#333", // Darker color for better contrast
   },
   input: {
