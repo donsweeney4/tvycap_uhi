@@ -116,12 +116,12 @@ export default function MainScreen1() {
     if (!bleState.dbRef) bleState.dbRef = { current: null };
   }, []);
 
-  // Hidden unlock: tap Version text 7 times to enable Simulation Mode
+  // Hidden unlock: tap Version text 5 times to enable Simulation Mode
   const onVersionTap = async () => {
     if (simUnlocked) return; // already unlocked
     const n = tapCount + 1;
     setTapCount(n);
-    if (n >= 7) {
+    if (n >= 5) {
        setSimulationEnabled(true); // enables sim for this session
        showToastAsync("✅ Simulation Mode enabled", 2000);
     }
@@ -135,7 +135,7 @@ export default function MainScreen1() {
       <Text style={styles.header}>Climate Action Program</Text>
       <Text style={styles.title}>UHI Sensor</Text>
 
-      {/* Tap 7× on Version to unlock Simulation Mode */}
+      {/* Tap 5× on Version to unlock Simulation Mode */}
       <Text style={styles.version} onPress={onVersionTap}>
         Version: {VERSION}
       </Text>
@@ -292,7 +292,7 @@ const styles = StyleSheet.create({
     marginVertical: 3
   },
   version: {
-    fontSize: 12,
+    fontSize: 14,
     marginBottom: 15,
     color: "blue"
   },
