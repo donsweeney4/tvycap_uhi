@@ -23,7 +23,7 @@
       ]
     ],
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "org.quest-science.BLEScanner",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "This app needs access to your location to provide BLE scanning and logging.",

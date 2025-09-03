@@ -191,26 +191,31 @@ export default function MainScreen1() {
         }}
       />
 
-      {/* ✅ Export Data button (email if available, else share) */}
-      <Button
-        title="Export Data"
-        containerStyle={{ width: '35%', marginBottom: 12 }}
-        buttonStyle={{ backgroundColor: 'blue', borderRadius: 10 }}
-        titleStyle={{ color: 'yellow' }}
-        onPress={() => {
-          if (!deviceNameRef.current || !jobcodeRef.current) {
-            showToastAsync("❌ Missing metadata. Cannot export.", 3000);
-            return;
-          }
-          const currentDbFilePath = `${FileSystem.documentDirectory}SQLite/appData.db`;
-          exportDatabase(
-            currentDbFilePath,
-            jobcodeRef,
-            deviceNameRef,
-            emailRef.current  // ✅ email if set, null otherwise
-          );
-        }}
-      />
+     {/* ✅ Export Data button (email if available, else share) */}
+<Button
+  title="Export Data"
+  containerStyle={{ width: '35%', marginBottom: 12 }}
+  buttonStyle={{ backgroundColor: 'blue', borderRadius: 10 }}
+  titleStyle={{ color: 'yellow' }}
+  onPress={() => {
+    if (bleState.isSamplingRef?.current) {
+      showToastAsync("⚠️ Stop sampling before exporting data.", 3000);
+      return;
+    }
+    if (!deviceNameRef.current || !jobcodeRef.current) {
+      showToastAsync("❌ Missing metadata. Cannot export.", 3000);
+      return;
+    }
+    const currentDbFilePath = `${FileSystem.documentDirectory}SQLite/appData.db`;
+    exportDatabase(
+      currentDbFilePath,
+      jobcodeRef,
+      deviceNameRef,
+      emailRef.current  // ✅ email if set, null otherwise
+    );
+  }}
+/>
+
 
       <View style={{ marginBottom: 20 }}><Text> </Text></View>
 

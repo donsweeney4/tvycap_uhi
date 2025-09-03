@@ -30,7 +30,7 @@
       "ios": {
         "distribution": "store",
         "autoIncrement": true,
-        "simulator": false
+        "simulator": false,
       }
     },
     "adhoc": {
