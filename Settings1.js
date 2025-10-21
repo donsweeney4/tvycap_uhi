@@ -14,6 +14,12 @@ import {
 
 import * as SecureStore from "expo-secure-store";
 import { useNavigation } from "@react-navigation/native";
+// --- NEW ---
+import RNPickerSelect from "react-native-picker-select";
+import { Asset } from "expo-asset";
+import * as FileSystem from "expo-file-system";
+// --- END NEW ---
+
 // Assuming these functions are correctly implemented and accessible from these paths
 import { GetPairedSensorName, openDatabaseConnection, clearDatabase } from "./functions";
 import { showToastAsync } from "./functionsHelper";
@@ -22,16 +28,66 @@ export default function SettingsScreen() {
   const [isPressed, setIsPressed] = useState(false);
   const [campaignName, setCampaignName] = useState("");
   const [campaignSensorNumber, setCampaignSensorNumber] = useState("");
+  // --- NEW ---
+  const [locations, setLocations] = useState([]); // To store parsed CSV data
+  const [selectedLocation, setSelectedLocation] = useState(null); // To store the selected location ID
+  // --- END NEW ---
   const [sensorPaired, setSensorPaired] = useState(false);
   const [dummyState, setDummyState] = useState(0); // Used for force update in clearDatabase, as per original code
   const [counter, setCounter] = useState(0); // Used for force update in clearDatabase, as per original code
 
   const navigation = useNavigation();
 
+  // --- NEW ---
   /**
-   * Loads saved settings (campaignName and campaignSensorNumber) from SecureStore
-   * when the component mounts.
+   * Loads and parses the locations.csv file from the app's assets.
    */
+  const loadLocations = async () => {
+    try {
+      // 1. Get the asset module. Assumes 'locations.csv' is in the root.
+      // If you put it in an 'assets' folder, use: require('./assets/locations.csv')
+      const locationAsset = require("./locations.csv");
+      
+      // 2. Get the Asset object
+      const asset = Asset.fromModule(locationAsset);
+      
+      // 3. Ensure it's downloaded (usually cached, but good practice)
+      await asset.downloadAsync();
+      
+      // 4. Read the file content as a string
+      const csvString = await FileSystem.readAsStringAsync(asset.localUri);
+      
+      // 5. Parse the CSV string
+      const parsedLocations = csvString
+        .split("\n") // Split by line
+        .filter(row => row.trim() !== "") // Remove empty lines
+        .map(row => {
+          const [id, name] = row.split(","); // Split by comma
+          if (id && name) {
+            return {
+              label: name.trim(), // Use text for label
+              value: parseInt(id.trim(), 10), // Use integer for value
+            };
+          }
+          return null;
+        })
+        .filter(Boolean); // Filter out any null (badly formed) rows
+
+      setLocations(parsedLocations);
+      console.log("✅ Locations loaded successfully");
+    } catch (error) {
+      console.error("❌ Error loading locations.csv:", error);
+      showToastAsync("Error loading locations list.", 2000);
+    }
+  };
+  // --- END NEW ---
+
+
+  /**
+   * Loads saved settings (campaignName, campaignSensorNumber, and selectedLocationId)
+   * from SecureStore when the component mounts.
+   */
+  // --- MODIFIED ---
   const loadSettings = async () => {
     try {
       // Check if SecureStore is available on the device
@@ -43,10 +99,14 @@ export default function SettingsScreen() {
       // Retrieve items from SecureStore
       const storedCampaignName = await SecureStore.getItemAsync("campaignName");
       const storedCampaignSensorNumber = await SecureStore.getItemAsync("campaignSensorNumber");
+      const storedLocationId = await SecureStore.getItemAsync("selectedLocationId"); // --- NEW ---
 
       // Update state if values are found
       if (storedCampaignName) setCampaignName(storedCampaignName);
       if (storedCampaignSensorNumber) setCampaignSensorNumber(storedCampaignSensorNumber);
+      if (storedLocationId) { // --- NEW ---
+        setSelectedLocation(parseInt(storedLocationId, 10)); // Convert back to number
+      }
     } catch (error) {
       console.error("Error loading settings from SecureStore:", error);
       // Optionally, show a toast to the user about loading failure
@@ -54,17 +114,16 @@ export default function SettingsScreen() {
     }
   };
 
-  // Effect hook to load settings when the component mounts
+  // Effect hook to load settings AND locations when the component mounts
+  // --- MODIFIED ---
   useEffect(() => {
     loadSettings();
+    loadLocations(); // --- NEW ---
   }, []);
 
   /**
    * Attempts to write a key-value pair to SecureStore with retry logic.
-   * @param {string} key - The key to store.
-   * @param {string} value - The value to store.
-   * @param {number} retries - Number of retry attempts.
-   * @returns {Promise<boolean>} True if saved successfully, false otherwise.
+   * (This function is unchanged but remains essential)
    */
   const writeWithRetry = async (key, value, retries = 3) => {
     for (let attempt = 1; attempt <= retries; attempt++) {
@@ -86,16 +145,18 @@ export default function SettingsScreen() {
   };
 
   /**
-   * Saves the campaign settings to SecureStore and attempts to clear the database.
+   * Saves all campaign settings to SecureStore and attempts to clear the database.
    * Provides user feedback via toast messages based on success/failure.
    */
+  // --- MODIFIED ---
   const saveSettings = async () => {
     try {
       Keyboard.dismiss(); // Dismiss the keyboard when save is initiated
 
       // Input validation
-      if (!campaignName || !campaignSensorNumber) {
-        showToastAsync("Missing Info \n Enter both campaign name and campaign sensor number.", 2000);
+      // --- MODIFIED ---
+      if (!selectedLocation || !campaignName || !campaignSensorNumber) {
+        showToastAsync("Missing Info \n Select location, campaign name, and sensor number.", 2000);
         return;
       }
 
@@ -115,10 +176,13 @@ export default function SettingsScreen() {
       // Attempt to save settings to SecureStore with retry logic
       const savedCampaignName = await writeWithRetry("campaignName", campaignName);
       const savedCampaignSensorNumber = await writeWithRetry("campaignSensorNumber", paddedSensor);
+      // --- NEW ---
+      const savedLocation = await writeWithRetry("selectedLocationId", String(selectedLocation)); // Save ID as string
 
-      // If SecureStore save failed for either item, show error toast and exit
-      if (!savedCampaignName || !savedCampaignSensorNumber) {
-        showToastAsync("❌ Failed to save settings to SecureStore.", 3000);
+      // If SecureStore save failed for ANY item, show error toast and exit
+      // --- MODIFIED ---
+      if (!savedCampaignName || !savedCampaignSensorNumber || !savedLocation) {
+        showToastAsync("❌ Failed to save all settings to SecureStore.", 3000);
         return; // Important: Stop execution if SecureStore save failed
       }
 
@@ -154,7 +218,7 @@ export default function SettingsScreen() {
 
   /**
    * Handles the pairing of a new temperature sensor.
-   * Uses `GetPairedSensorName` and provides toast feedback.
+   * (This function is unchanged)
    */
   const pairNewSensor = async () => {
     try {
@@ -183,7 +247,7 @@ export default function SettingsScreen() {
       {sensorPaired && (
         <View style={styles.sensorStatus}>
           <Text style={styles.sensorStatusText}>✅ Sensor Paired!</Text>
-        </View>
+        </Vw>
       )}
 
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -199,6 +263,21 @@ export default function SettingsScreen() {
               Pair New Temperature Sensor
             </Text>
           </TouchableOpacity>
+
+          {/* --- NEW: Select Location Dropdown --- */}
+          <Text style={styles.label}>Select Location:</Text>
+          <View style={styles.pickerContainer}>
+            <RNPickerSelect
+              onValueChange={(value) => setSelectedLocation(value)}
+              items={locations}
+              style={pickerSelectStyles} // Use dedicated styles
+              value={selectedLocation}
+              placeholder={{ label: "Select a location...", value: null }}
+              useNativeAndroidPickerStyle={false} // Allows custom styling on Android
+            />
+          </View>
+          {/* --- END NEW --- */}
+
 
           {/* Campaign Name Input */}
           <Text style={styles.label}>Set New Campaign Name:</Text>
@@ -274,6 +353,18 @@ const styles = StyleSheet.create({
     color: "#444",
     backgroundColor: "#f9f9f9", // Light background for input
   },
+  // --- NEW: Style for the picker container to match the input fields ---
+  pickerContainer: {
+    width: "90%",
+    maxWidth: 300,
+    borderWidth: 1,
+    borderColor: "#a0a0a0",
+    borderRadius: 8,
+    marginBottom: 25,
+    backgroundColor: "#f9f9f9",
+    justifyContent: 'center', // Center the picker text vertically
+  },
+  // --- END NEW ---
   saveButton: {
     backgroundColor: "#007AFF", // iOS blue
     paddingVertical: 15,
@@ -324,3 +415,29 @@ const styles = StyleSheet.create({
     color: "green",
   },
 });
+
+// --- NEW: Dedicated styles for react-native-picker-select ---
+const pickerSelectStyles = StyleSheet.create({
+  inputIOS: {
+    fontSize: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    color: '#444',
+    paddingRight: 30, // to ensure the text is never behind the icon
+  },
+  inputAndroid: {
+    fontSize: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 12, // Match iOS padding
+    color: '#444',
+    paddingRight: 30, // to ensure the text is never behind the icon
+  },
+  placeholder: {
+    color: '#9a9a9a', // Placeholder text color
+  },
+  iconContainer: { // Style for the dropdown arrow
+    top: 12,
+    right: 15,
+  },
+});
+// --- END NEW ---

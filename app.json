@@ -20,7 +20,8 @@
         {
           "locationWhenInUsePermission": "Allow location access while using the app."
         }
-      ]
+      ],
+      "expo-asset"
     ],
     "ios": {
       "supportsTablet": true,
