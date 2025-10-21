@@ -1,4 +1,5 @@
-// s3_utils.js
+// s3_utils.js -- utility to get presigned S3 URLs
+
 export async function getPresignedS3Url(filename) {
   // Define requestBody BEFORE logging it
   const requestBody = JSON.stringify({ filename });

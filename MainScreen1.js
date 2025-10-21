@@ -33,6 +33,31 @@ export default function MainScreen1() {
   const [tapCount, setTapCount] = useState(0);
   const [simUnlocked, setSimUnlocked] = useState(false);
 
+ 
+/*
+deviceNameRef
+
+What it is: A ref holding the unique, permanent identifier for the sensor.
+How it's created (in MainScreen1.js): It's built when the main screen loads, using values from SecureStore.
+Format: [CampaignName]_[LocationID]_[SensorNumber]
+Example Value: LivermoreHeat_1_007
+Another Example: PleasantonPark_3_012. --> campaignName = PleasantonPark, locationId = 3, campaignSensorNumber = 12
+Purpose (in functionsS3.js): It is used to create the final filename for the file uploaded to S3 (e.g., LivermoreHeat_1_007.csv).
+
+jobcodeRef
+
+What it is: A ref holding a unique identifier for a single data collection session. It's created every time the main screen is focused.
+How it's created (in MainScreen1.js): It combines the deviceNameRef's value with the current date and time.
+Format: [deviceNameRef value]-[DateTime]
+Example Value: LivermoreHeat_1_007-20251020183015
+Another Example: PleasantonPark_3_012-20251105120030. --> deviceName = PleasantonPark_3_012, DateTime = 2025-11-05 12:00:3015
+Purpose (in functionsS3.js): It serves two key functions:
+Database Tagging: It's written into the jobcode column for every single row of data in the database. This groups all the data points from one session together.
+Temporary Filename: It's used as the name for the temporary .csv file that is created in your app's cache before being uploaded. 
+
+*/
+
+
   const navigation = useNavigation();
   const deviceNameRef = useRef(null);
   const jobcodeRef = useRef(null);
@@ -50,20 +75,31 @@ export default function MainScreen1() {
         const campaignName = await SecureStore.getItemAsync("campaignName");
         const campaignSensorNumber = await SecureStore.getItemAsync("campaignSensorNumber");
         const pairedSensorName = await SecureStore.getItemAsync("pairedSensorName");
+        // --- NEW ---
+        const storedLocationId = await SecureStore.getItemAsync("selectedLocationId");
 
+        // --- MODIFIED ---
         console.log("📦 Focused: retrieved settings:", {
           campaignName,
           campaignSensorNumber,
-          pairedSensorName
+          pairedSensorName,
+          storedLocationId // --- NEW ---
         });
 
+        // --- MODIFIED: Added check for storedLocationId ---
         if (
           campaignName?.trim() &&
           campaignSensorNumber?.trim() &&
-          pairedSensorName?.trim()
+          pairedSensorName?.trim() &&
+          storedLocationId?.trim() // --- NEW ---
         ) {
           const paddedSensorNumber = campaignSensorNumber.padStart(3, "0");
-          const fullDeviceName = `${campaignName}_${paddedSensorNumber}`;
+          // --- NEW: Parse the location ID ---
+          const locationId = parseInt(storedLocationId, 10); 
+          
+          // --- MODIFIED: Include locationId in the fullDeviceName ---
+          const fullDeviceName = `${campaignName}_${locationId}_${paddedSensorNumber}`;
+          
           setDeviceName(fullDeviceName);
           deviceNameRef.current = fullDeviceName;
 
@@ -79,8 +115,9 @@ export default function MainScreen1() {
         } else {
           if (!redirectedRef.current) {
             redirectedRef.current = true;
+            // --- MODIFIED: Updated toast message ---
             console.warn("⚠️ Missing info. Redirecting to settings.");
-            await showToastAsync("Missing campaign info. Redirecting to Settings...", 3000);
+            await showToastAsync("Missing campaign/location info. Redirecting to Settings...", 3000);
             navigation.navigate("Settings");
           }
         }
