@@ -40,8 +40,8 @@ deviceNameRef
 What it is: A ref holding the unique, permanent identifier for the sensor.
 How it's created (in MainScreen1.js): It's built when the main screen loads, using values from SecureStore.
 Format: [CampaignName]_[LocationID]_[SensorNumber]
-Example Value: LivermoreHeat_1_007
-Another Example: PleasantonPark_3_012. --> campaignName = PleasantonPark, locationId = 3, campaignSensorNumber = 12
+Example Value: LivermoreHeat_uhi-livermore_007
+Another Example: PleasantonPark_uhi-pleasanton_012. --> campaignName = PleasantonPark, locationId = uhi-pleasanton, campaignSensorNumber = 12
 Purpose (in functionsS3.js): It is used to create the final filename for the file uploaded to S3 (e.g., LivermoreHeat_1_007.csv).
 
 jobcodeRef
@@ -49,8 +49,8 @@ jobcodeRef
 What it is: A ref holding a unique identifier for a single data collection session. It's created every time the main screen is focused.
 How it's created (in MainScreen1.js): It combines the deviceNameRef's value with the current date and time.
 Format: [deviceNameRef value]-[DateTime]
-Example Value: LivermoreHeat_1_007-20251020183015
-Another Example: PleasantonPark_3_012-20251105120030. --> deviceName = PleasantonPark_3_012, DateTime = 2025-11-05 12:00:3015
+Example Value: LivermoreHeat_uhi-livermore_007-20251020183015
+Another Example: PleasantonPark_uhi-pleasanton_012-20251105120030. --> deviceName = PleasantonPark_uhi-pleasanton_012, DateTime = 2025-11-05 12:00:3015
 Purpose (in functionsS3.js): It serves two key functions:
 Database Tagging: It's written into the jobcode column for every single row of data in the database. This groups all the data points from one session together.
 Temporary Filename: It's used as the name for the temporary .csv file that is created in your app's cache before being uploaded. 
@@ -67,7 +67,7 @@ Temporary Filename: It's used as the name for the temporary .csv file that is cr
   const logoWidth = width * 0.15;
   const logoHeight = height * 0.15;
 
-  // On focus, load settings and also reflect persisted Simulation Mode state
+// On focus, load settings and also reflect persisted Simulation Mode state
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", async () => {
       console.log("MainScreen L1: Focus event triggered");
@@ -75,29 +75,28 @@ Temporary Filename: It's used as the name for the temporary .csv file that is cr
         const campaignName = await SecureStore.getItemAsync("campaignName");
         const campaignSensorNumber = await SecureStore.getItemAsync("campaignSensorNumber");
         const pairedSensorName = await SecureStore.getItemAsync("pairedSensorName");
-        // --- NEW ---
+        // --- MODIFIED: Still loads the item ---
         const storedLocationId = await SecureStore.getItemAsync("selectedLocationId");
 
-        // --- MODIFIED ---
         console.log("📦 Focused: retrieved settings:", {
           campaignName,
           campaignSensorNumber,
           pairedSensorName,
-          storedLocationId // --- NEW ---
+          storedLocationId // Now a string (e.g., "Pleasanton")
         });
 
-        // --- MODIFIED: Added check for storedLocationId ---
+        // --- MODIFIED: Check if the string is not empty ---
         if (
           campaignName?.trim() &&
           campaignSensorNumber?.trim() &&
           pairedSensorName?.trim() &&
-          storedLocationId?.trim() // --- NEW ---
+          storedLocationId?.trim() // Checks for non-empty string
         ) {
           const paddedSensorNumber = campaignSensorNumber.padStart(3, "0");
-          // --- NEW: Parse the location ID ---
-          const locationId = parseInt(storedLocationId, 10); 
           
-          // --- MODIFIED: Include locationId in the fullDeviceName ---
+          // --- MODIFIED: No longer parsing as an integer ---
+          const locationId = storedLocationId; 
+          
           const fullDeviceName = `${campaignName}_${locationId}_${paddedSensorNumber}`;
           
           setDeviceName(fullDeviceName);
@@ -115,7 +114,6 @@ Temporary Filename: It's used as the name for the temporary .csv file that is cr
         } else {
           if (!redirectedRef.current) {
             redirectedRef.current = true;
-            // --- MODIFIED: Updated toast message ---
             console.warn("⚠️ Missing info. Redirecting to settings.");
             await showToastAsync("Missing campaign/location info. Redirecting to Settings...", 3000);
             navigation.navigate("Settings");
@@ -225,7 +223,8 @@ Temporary Filename: It's used as the name for the temporary .csv file that is cr
             return;
           }
           const currentDbFilePath = `${FileSystem.documentDirectory}SQLite/appData.db`;
-          uploadDataIfAllowed(currentDbFilePath, jobcodeRef, deviceNameRef);
+          const dataBucket = "uhi-livermore"; // Define it here
+          uploadDataIfAllowed(currentDbFilePath, jobcodeRef, deviceNameRef, dataBucket); // Pass it
         }}
       />
 

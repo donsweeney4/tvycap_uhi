@@ -12,16 +12,16 @@ import { inSimulation } from "./utils/ble";
 // It is now expected to be imported from './functions'.
 
 // Guarded upload: skips when Simulation Mode is ON
-export const uploadDataIfAllowed = async (dbPath, jobcodeRef, deviceNameRef) => {
+export const uploadDataIfAllowed = async (dbPath, jobcodeRef, deviceNameRef, bucketName) => {
   if (await inSimulation()) {
     await showToastAsync("Simulation Mode: upload disabled (no data sent).", 2500);
     return;
   }
-  return uploadDatabaseToS3(dbPath, jobcodeRef, deviceNameRef);
+  return uploadDatabaseToS3(dbPath, jobcodeRef, deviceNameRef, bucketName);
 };
 
 
-export const uploadDatabaseToS3 = async (dbFilePath, jobcodeRef, deviceNameRef) => {
+export const uploadDatabaseToS3 = async (dbFilePath, jobcodeRef, deviceNameRef, bucketName) => {
   try {
     console.log(`Uploading .csv file to AWS. Current data Sampling is ${bleState.isSamplingRef.current}`);
 
@@ -145,7 +145,7 @@ export const uploadDatabaseToS3 = async (dbFilePath, jobcodeRef, deviceNameRef) 
     const uploadFilename = `${filename}.csv`;
     console.log(`Requesting presigned URL to upload file ${uploadFilename} to S3`);
 
-    const { uploadUrl, publicUrl } = await getPresignedS3Url(uploadFilename);
+   const { uploadUrl, publicUrl } = await getPresignedS3Url(uploadFilename, bucketName);
 
     const uploadResponse = await fetch(uploadUrl, {
       method: 'PUT',

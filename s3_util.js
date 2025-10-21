@@ -1,18 +1,21 @@
-// s3_utils.js -- utility to get presigned S3 URLs
+// s3_util.js -- utility to get presigned S3 URLs
 
-export async function getPresignedS3Url(filename) {
-  // Define requestBody BEFORE logging it
-  const requestBody = JSON.stringify({ filename });
+export async function getPresignedS3Url(filename, bucketName) { // --- MODIFIED ---
+  
+  // --- MODIFIED: Add bucketName to the request body ---
+  const requestBody = JSON.stringify({ 
+    filename: filename, 
+    bucket: bucketName  // You can name this key whatever your server expects
+  });
 
   // --- ADD THESE LOGS FOR DEBUGGING ---
-  console.log("DEBUG: Fetch URL:", 'http://mobile.quest-science.net/get_presigned_url'); // Note: was 'http' in your snippet
+  console.log("DEBUG: Fetch URL:", 'https://mobile.quest-science.net/get_presigned_url');
   console.log("DEBUG: Fetch Method:", 'POST');
   console.log("DEBUG: Fetch Headers:", { 'Content-Type': 'application/json' });
-  console.log("DEBUG: Fetch Body (stringified):", requestBody);
-  // --- END DEBUG LOGS ---
+  console.log("DEBUG: Fetch Body (stringified):", requestBody); // --- UPDATED ---
+  // --- END DEBUG LOGS --
 
   try {
-    // Ensure the URL is correct (http vs https)
     const response = await fetch('https://mobile.quest-science.net/get_presigned_url', {
       method: 'POST',
       headers: {
@@ -22,7 +25,7 @@ export async function getPresignedS3Url(filename) {
     });
 
     if (!response.ok) {
-      // It's good practice to try to read the error body even if not .json()
+      // ... (error handling code remains the same) ...
       let errorDetails = `Server error: ${response.status}`;
       try {
         const errorJson = await response.json();
