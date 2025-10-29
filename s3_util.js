@@ -2,17 +2,22 @@
 
 export async function getPresignedS3Url(filename, bucketName) { // --- MODIFIED ---
   
-  // --- MODIFIED: Add bucketName to the request body ---
+  // ---  Add bucketName to the request body ---
   const requestBody = JSON.stringify({ 
     filename: filename, 
     bucket: bucketName  // You can name this key whatever your server expects
   });
 
   // --- ADD THESE LOGS FOR DEBUGGING ---
+  console.log("");
+  console.log("DEBUG: Preparing to fetch presigned S3 URL with the following details:");
+  console.log("DEBUG: Filename:", filename);
+  console.log("DEBUG: Bucket Name:", bucketName);
   console.log("DEBUG: Fetch URL:", 'https://mobile.quest-science.net/get_presigned_url');
   console.log("DEBUG: Fetch Method:", 'POST');
   console.log("DEBUG: Fetch Headers:", { 'Content-Type': 'application/json' });
-  console.log("DEBUG: Fetch Body (stringified):", requestBody); // --- UPDATED ---
+  console.log("DEBUG: Fetch Body (stringified):", requestBody); //
+  console.log(""); 
   // --- END DEBUG LOGS --
 
   try {
@@ -42,8 +47,12 @@ export async function getPresignedS3Url(filename, bucketName) { // --- MODIFIED 
       uploadUrl: data.uploadUrl,
       publicUrl: data.publicUrl,
     };
-  } catch (err) {
-    console.error('❌ Error fetching presigned S3 URL:', err);
-    throw err;
-  }
+  } catch (err) { 
+  // Use 'err' to log the error
+  console.error("❌ FAILED TO GET PRESIGNED URL:", err.message); 
+  
+  // Also log the original console.error you had (it was correct)
+  console.error('❌ Error fetching presigned S3 URL:', err);
+  throw err; 
+}
 }

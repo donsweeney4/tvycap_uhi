@@ -2,11 +2,11 @@ import { getPresignedS3Url } from './s3_util';
 import * as FileSystem from 'expo-file-system';
 import * as SQLite from 'expo-sqlite'; // Needed for the type, but openDatabaseConnection should handle actual DB operations
 import { Alert, Platform } from 'react-native';
-import { showToastAsync } from './functionsHelper'; // For success toasts
-// Assuming these are exported from functions.js
-import { displayErrorToast, openDatabaseConnection } from './functions'; // Import openDatabaseConnection
+
+import { openDatabaseConnection, displayErrorToast, showToastAsync } from './dbUtils';
 import { bleState } from "./utils/bleState";
 import { inSimulation } from "./utils/ble";
+import * as SecureStore from 'expo-secure-store';
 
 // The local declaration of openDatabaseConnection has been removed.
 // It is now expected to be imported from './functions'.
@@ -23,9 +23,19 @@ export const uploadDataIfAllowed = async (dbPath, jobcodeRef, deviceNameRef, buc
 
 export const uploadDatabaseToS3 = async (dbFilePath, jobcodeRef, deviceNameRef, bucketName) => {
   try {
+
+    const bucketName = await SecureStore.getItemAsync("selectedLocationId");
+
+    if (!bucketName) {
+        console.error("❌ Location ID (bucket name) not found in SecureStore. Cannot upload.");
+        await displayErrorToast("❌ Location not set. Go to Settings to select a location.", 8000);
+        return; // Stop the upload
+    }
+    console.log(`[Upload] Using data bucket: ${bucketName}`);
     console.log(`Uploading .csv file to AWS. Current data Sampling is ${bleState.isSamplingRef.current}`);
 
     if (bleState.isSamplingRef.current) {
+      
       // Use showToastAsync as this is a specific, non-critical user-action required message
       await showToastAsync("Sampling in Progress. Stop sampling before uploading.", 2000);
       return;
@@ -57,7 +67,7 @@ export const uploadDatabaseToS3 = async (dbFilePath, jobcodeRef, deviceNameRef, 
         await showToastAsync("Error", "Database connection is unavailable. Cannot upload.");
         return;
     }
-    // --- CRITICAL CHANGE END ---
+   
 
     const checkColumnExists = async (database, columnName) => {
       const result = await database.getAllAsync(`PRAGMA table_info(appData);`);

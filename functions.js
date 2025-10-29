@@ -10,11 +10,11 @@ import { atob } from "react-native-quick-base64";
 import { Buffer } from "buffer";
 import * as SecureStore from "expo-secure-store";
 import { SERVICE_UUID, CHARACTERISTIC_UUID} from "./constants";
-import { showToastAsync } from "./functionsHelper";
+
 import { bleState } from "./utils/bleState";
 
 
-import { uploadDatabaseToS3 } from "./functionsS3";
+import { openDatabaseConnection, displayErrorToast, showToastAsync } from './dbUtils';
 
 async function ensureManager() {
   if (!bleState.manager) {
@@ -23,22 +23,9 @@ async function ensureManager() {
   return bleState.manager;
 }
 
-const THROTTLE_ERROR_TOAST_INTERVAL_MS = 5000;
+//const THROTTLE_ERROR_TOAST_INTERVAL_MS = 5000;
 
-//# Throttle error toasts to avoid spamming
-export const displayErrorToast = async (message, duration = 3000) => {
-  const now = Date.now();
-  if (!bleState.lastErrorToastTimestampRef) {
-      bleState.lastErrorToastTimestampRef = { current: 0 };
-  }
 
-  if (now - bleState.lastErrorToastTimestampRef.current > THROTTLE_ERROR_TOAST_INTERVAL_MS) {
-    await showToastAsync(message, duration);
-    bleState.lastErrorToastTimestampRef.current = now;
-  } else {
-    console.log("🚫 Toast throttled: too soon to show another error toast.");
-  }
-};
 
 
 //#0 Permissions for BLE on Android 12 and higher
@@ -84,37 +71,7 @@ export async function requestBluetoothPermissions() {
 ////////////////////////////////////////////////////////////////////////////////////////////
 
 
-//# Define the function to open/get the database connection
-export const openDatabaseConnection = async () => { // Exported for use in SettingsScreen
-  if (bleState.dbRef.current) {
-    console.log("Database already open, returning existing instance.");
-    return bleState.dbRef.current;
-  }
-  try {
-    const database = await SQLite.openDatabaseAsync('appData.db');
-    // Perform any necessary table creation/migrations here
-    await database.execAsync(`
-      PRAGMA journal_mode = WAL;
-      CREATE TABLE IF NOT EXISTS appData (
-        timestamp INTEGER PRIMARY KEY NOT NULL,
-        temperature INTEGER NOT NULL,
-        humidity INTEGER,
-        latitude INTEGER NOT NULL,
-        longitude INTEGER NOT NULL,
-        altitude INTEGER,
-        accuracy INTEGER,
-        speed INTEGER
-      );
-    `);
-    console.log("✅ Database opened and tables ensured.");
-    bleState.dbRef.current = database; // Store the open database instance
-    return database;
-  } catch (error) {
-    console.error("❌ Error opening database:", error);
-    await displayErrorToast("❌ Critical error: Could not open database! Restart app.", 10000);
-    throw error; // Re-throw to propagate the error
-  }
-};
+
 
 //#1. handleStart: scan, connect and start sampling BLE temperature sensor
      
