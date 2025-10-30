@@ -14,7 +14,6 @@ import {
 
 import * as SecureStore from "expo-secure-store";
 import { useNavigation } from "@react-navigation/native";
-
  
 import { Dropdown } from "react-native-element-dropdown";
  
@@ -181,10 +180,16 @@ export default function SettingsScreen() {
     }
   };
 
+  // --- BEGIN RETURN BLOCK (LINE 184) ---
   return (
     <KeyboardAvoidingView
+      // iOS: 'padding' is generally reliable.
+      // Android: 'height' is typically best for ScrollView, combined with extraScrollHeight.
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={styles.container}
+      // CRITICAL for Android: Pushes the scroll view up an extra amount to ensure 
+      // the focused input is visible above the keyboard. Adjust 150 as needed.
+      {...(Platform.OS === "android" && { extraScrollHeight: 150 })} 
     >
       {/* Sensor Paired Status Display */}
       {sensorPaired && (
@@ -194,7 +199,11 @@ export default function SettingsScreen() {
       )}
 
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <ScrollView 
+          // Use the new style, which includes paddingBottom
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
           {/* Pair New Sensor Button */}
           <TouchableOpacity
             style={[styles.saveButton, { marginBottom: 45 }, isPressed && styles.saveButtonPressed]}
@@ -271,7 +280,10 @@ export default function SettingsScreen() {
     </KeyboardAvoidingView>
   );
 }
+// --- END RETURN BLOCK ---
 
+
+// --- BEGIN STYLESHEET (CORRECTED) ---
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -280,10 +292,12 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: "#fff",
   },
-  scrollContainer: {
+  // CORRECTED: Use this for contentContainerStyle
+  scrollContent: {
     flexGrow: 1, 
     justifyContent: "center", 
     alignItems: "center", 
+    paddingBottom: 50, // CRITICAL: Adds space at the bottom to ensure the last input can scroll up
   },
   label: {
     fontSize: 18,
@@ -305,10 +319,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#f9f9f9", 
   },
   
-  // --- REMOVED: pickerContainer ---
-
-  // --- NEW: Styles for react-native-element-dropdown ---
-  // This style is designed to look exactly like your TextInput
+  // --- Styles for react-native-element-dropdown ---
   dropdown: {
     width: "90%",
     maxWidth: 300,
@@ -332,7 +343,7 @@ const styles = StyleSheet.create({
     height: 40,
     fontSize: 16,
   },
-  // --- END NEW STYLES ---
+  // --- END Dropdown STYLES ---
 
   saveButton: {
     backgroundColor: "#007AFF", 
