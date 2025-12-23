@@ -1,1 +1,1 @@
-This folder has expo-react-native code used for both ios and android phones to collect tempertures via BLE from sensors and gps data from the mobile device and then upload that data to an S3 bucket on AWS
+This folder has expo-react-native code used for both ios and android phones to collect tempertures and optionaly humidity via BLE from sensors and gps data from the mobile device and then upload that data to an S3 bucket on AWS
