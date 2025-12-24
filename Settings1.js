@@ -188,8 +188,8 @@ export default function SettingsScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={styles.container}
       // CRITICAL for Android: Pushes the scroll view up an extra amount to ensure 
-      // the focused input is visible above the keyboard. Adjust 150 as needed.
-      {...(Platform.OS === "android" && { extraScrollHeight: 150 })} 
+      // the focused input is visible above the keyboard. Adjust 225 as needed.
+      {...(Platform.OS === "android" && { extraScrollHeight: 225 })} 
     >
       {/* Sensor Paired Status Display */}
       {sensorPaired && (

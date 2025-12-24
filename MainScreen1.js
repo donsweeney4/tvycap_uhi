@@ -241,7 +241,8 @@ const loadLocations = async () => {
       <Text style={styles.status}>
         Location: {locationValue || "(no location)"}{"\n"} 
         Sensor: {deviceName || "(no name)"}{"\n"}
-        Temperature: {isNaN(temperature) ? "--" : `${(temperature * 9/5 + 32).toFixed(2)}°F`} {"\n"}
+        Temperature: {isNaN(temperature) ? "--" : `${(temperature * 9/5 + 32).toFixed(2)}°F. `} 
+           Humidity: {isNaN(humidity) ? "--" : `${humidity.toFixed(2)}%`}{"\n"}
         GPS Accuracy: {isNaN(accuracy) ? "--" : `${accuracy}m`}
       </Text>
 

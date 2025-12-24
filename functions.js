@@ -447,8 +447,32 @@ const stopSamplingLoop = () => {
   console.log("✅ Sampling and location tracking cleanup complete.");
 }
 
-//#4. handleLocationUpdate: Callback function when location updates in #3
+//#4a  Helper function to parse BLE string ---
 
+// Examples: 
+// Input: "24.50" -> Returns { temp: 24.50, humidity: 0.0 }
+// Input: "24.50,48.10" -> Returns { temp: 24.50, humidity: 48.10 }
+const parseSensorData = (dataString) => {
+  if (!dataString) return { temp: NaN, humidity: 0.0 };
+
+  const parts = dataString.split(',');
+  
+  // 1. Parse Temperature (always the first part)
+  const temp = parseFloat(parseFloat(parts[0]).toFixed(2)) || NaN;
+
+  // 2. Parse Humidity (check if second part exists)
+  let humidity = 0.0;
+  if (parts.length > 1) {
+    humidity = parseFloat(parseFloat(parts[1]).toFixed(2)) || 0.0;
+  }
+
+  return { temp, humidity };
+};
+
+
+
+
+//#4. handleLocationUpdate: Callback function when location updates in #3
 const handleLocationUpdate = async (location, setCounter, setTemperature, setAccuracy, setIconType, setIconVisible) => {
   console.log("📍📍📍📍 //#4 handleLocationUpdate:");
 
@@ -459,17 +483,15 @@ const handleLocationUpdate = async (location, setCounter, setTemperature, setAcc
       bleState.isIntentionalDisconnectRef.current = false;
       stopSamplingLoop(); // This now reliably stops GPS
       displayErrorToast("⚠️ BLE device disconnected. Data recording stopped.", 5000);
-      // *** MODIFICATION 1: Show Red Icon ***
       setIconType('red');
       setIconVisible(true);
-      return; // Exit if BLE device is not connected
+      return; 
     }
 
     if (!bleState.isSamplingRef.current) {
       console.warn("⚠️ Sampling stopped. Ignoring BLE read.");
-      // Ensure red icon is removed if sampling stopped but device was connected
-      setIconVisible(false); // Hide any existing icon
-      return; // Exit if sampling is not active
+      setIconVisible(false); 
+      return; 
     }
 
     let rawData;
@@ -477,30 +499,30 @@ const handleLocationUpdate = async (location, setCounter, setTemperature, setAcc
       // --- BLE Read Operation ---
       rawData = await bleState.characteristicsRef.current.read();
     } catch (readError) {
-      // *** NEW MODIFICATION: Catch characteristic read errors here ***
       console.error("❌ Error reading characteristic from BLE device:", readError);
-      stopSamplingLoop(); // Stop sampling as we can't read data
+      stopSamplingLoop(); 
       displayErrorToast("❌ Failed to read data from sensor. Data recording stopped.", 5000);
-      setIconType('red'); // Display red icon
+      setIconType('red'); 
       setIconVisible(true);
-      return; // IMPORTANT: Exit as reading failed immediately after cleanup and icon update
+      return; 
     }
 
-    if (!rawData || !rawData.value) { // This check remains valid for successful read but empty value
+    if (!rawData || !rawData.value) { 
       console.error("❌ Error: No value returned in the characteristic.");
       displayErrorToast("❌ No value from BLE device. Check connection.", 3000);
-      // *** MODIFICATION 2: Show Red Icon for no value returned ***
       setIconType('red');
       setIconVisible(true);
-      return; // Exit if no data is read from BLE
+      return; 
     }
 
     const decodedValue = atob(rawData.value);
     console.log("📥 Decoded characteristic value:", decodedValue);
 
-    const tempValue = decodedValue;
-    const temperature = parseFloat(parseFloat(tempValue).toFixed(2)) || NaN;
-    setTemperature(temperature); // Update temperature display regardless of database save
+    // *** MODIFICATION: Parse string for Temp and Humidity ***
+    const { temp, humidity } = parseSensorData(decodedValue);
+    
+    // Set temp for UI display
+    setTemperature(temp); 
 
     const { latitude, longitude, altitude, accuracy, speed } = location.coords;
     const timestamp = Date.now();
@@ -513,31 +535,33 @@ const handleLocationUpdate = async (location, setCounter, setTemperature, setAcc
     // Duplicate data check based on timestamp
     if (timestamp - bleState.lastWriteTimestampRef.current < 50) {
       console.warn("⚠️ Duplicate data detected! Skipping write.");
-      return; // Exit if data is a duplicate
+      return; 
     }
     bleState.lastWriteTimestampRef.current = timestamp;
 
-    const humInt = 0; // Humidity is fixed to 0 as per original code
-    const tempInt = Math.round(temperature * 1e2);
+    // *** MODIFICATION: Use parsed humidity value (scaled by 100 for integer storage) ***
+    // If humidity was missing in BLE message, variable 'humidity' is 0.0, so humInt becomes 0.
+    const humInt = Math.round(humidity * 1e2); 
+    const tempInt = Math.round(temp * 1e2);
+    
     const latInt = Math.round(latitude * 1e7);
     const lonInt = Math.round(longitude * 1e7);
     const altInt = Math.round(altitude * 1e2);
     const accInt = Math.round(accuracy * 1e2);
     const speedInt = Math.round(speed * 1e2);
 
-    setAccuracy(Math.round(accuracy)); // Update accuracy display regardless of database save
+    setAccuracy(Math.round(accuracy)); 
 
     // --- Database Write Operation ---
     try {
       const database = bleState.dbRef.current;
       if (!database) {
           console.error("❌ Database reference is null. Cannot write data.");
-          stopSamplingLoop(); // This now reliably stops GPS
+          stopSamplingLoop(); 
           displayErrorToast("❌ Data recording stopped! Database not available.", 5000);
-          // *** MODIFICATION 3: Show Red Icon for DB null ***
           setIconType('red');
           setIconVisible(true);
-          return; // Exit if database is not available
+          return; 
       }
 
       await database.runAsync(
@@ -545,51 +569,42 @@ const handleLocationUpdate = async (location, setCounter, setTemperature, setAcc
          VALUES (?, ?, ?, ?, ?, ?, ?, ?);`,
         [timestamp, tempInt, humInt, latInt, lonInt, altInt, accInt, speedInt]
       );
-      console.log("✅ Data added to database successfully.");
+      console.log(`✅ Data added: Temp=${temp}, Hum=${humidity}`);
 
-      // *** MODIFICATION 4: Remove Red, Show Green for 500ms ***
       setIconType('green');
       setIconVisible(true);
       setTimeout(() => {
-        setIconVisible(false); // Hide green icon after 500ms
+        setIconVisible(false); 
       }, 500);
 
       // --- ONLY Increment Counter IF Data is Successfully Saved to Database ---
       setCounter((prev) => {
         const newCounter = prev + 1;
-        console.log(`✅ Updated Counter: ${newCounter}`);
         return newCounter;
       });
-      // --- End Counter Increment Block ---
 
     } catch (dbError) {
       console.error("❌ Fatal Error inserting data into database:", dbError);
-      stopSamplingLoop(); // This now reliably stops GPS
+      stopSamplingLoop(); 
       displayErrorToast(
         "❌ ERROR: Data recording stopped! Database issue. Please restart the app.",
         15000
       );
-      // Invalidate the database reference on critical database error
       console.log("🗑️ Invalidating database reference due to error.");
       bleState.dbRef.current = null;
-      // *** MODIFICATION 5: Show Red Icon for DB write error ***
       setIconType('red');
       setIconVisible(true);
-      return; // Exit on database write error
+      return; 
     }
 
   } catch (error) {
-    // This catch block handles any other unexpected errors within handleLocationUpdate
-    // that were not specifically caught above (e.g., issues with 'atob', parsing, etc.).
     console.error("❌ General error in handleLocationUpdate:", error);
-    stopSamplingLoop(); // This now reliably stops GPS
+    stopSamplingLoop(); 
     displayErrorToast("❌ An unexpected error occurred. Data recording stopped.", 5000);
-    // *** MODIFICATION 6: Show Red Icon for general errors ***
     setIconType('red');
     setIconVisible(true);
   }
 };
-
 
 //#8. Stop Sampling
 
