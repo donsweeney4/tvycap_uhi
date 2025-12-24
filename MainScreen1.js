@@ -24,6 +24,7 @@ export default function MainScreen1() {
   const [deviceName, setDeviceName] = useState(null);
   const [counter, setCounter] = useState(0);
   const [temperature, setTemperature] = useState(NaN);
+  const [humidity, setHumidity] = useState(NaN);
   const [accuracy, setAccuracy] = useState(NaN);
   const [dummyState, setDummyState] = useState(0);
   const [iconType, setIconType] = useState(null);
@@ -241,8 +242,17 @@ const loadLocations = async () => {
       <Text style={styles.status}>
         Location: {locationValue || "(no location)"}{"\n"} 
         Sensor: {deviceName || "(no name)"}{"\n"}
-        Temperature: {isNaN(temperature) ? "--" : `${(temperature * 9/5 + 32).toFixed(2)}°F. `} 
-           Humidity: {isNaN(humidity) ? "--" : `${humidity.toFixed(2)}%`}{"\n"}
+        Temperature: {isNaN(temperature) 
+        ? "--" 
+         : `${(temperature * 9/5 + 32).toFixed(2)}°F,  `
+        }
+        Humidity: {
+        isNaN(humidity)
+        ? "--"
+      : humidity === 0
+      ? "none"
+      : `${humidity.toFixed(2)}%`
+}{"\n"}
         GPS Accuracy: {isNaN(accuracy) ? "--" : `${accuracy}m`}
       </Text>
 
@@ -262,6 +272,7 @@ const loadLocations = async () => {
             deviceNameRef.current,
             setCounter,
             setTemperature,
+            setHumidity,
             setAccuracy,
             setIconType,
             setIconVisible

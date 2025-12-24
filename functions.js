@@ -75,7 +75,7 @@ export async function requestBluetoothPermissions() {
 
 //#1. handleStart: scan, connect and start sampling BLE temperature sensor
      
-export const handleStart = async (deviceName, setCounter, setTemperature, setAccuracy,
+export const handleStart = async (deviceName, setCounter, setTemperature, setHumidity, setAccuracy,
   setIconType,setIconVisible )   => { // setIconType and setIconVisible are correctly here
   await ensureManager();
   console.log(`🚀 handleStart triggered, Campaign & sensor: ${deviceName}`);
@@ -147,7 +147,7 @@ export const handleStart = async (deviceName, setCounter, setTemperature, setAcc
 
       setTimeout(() => {
         // startSampling now uses bleState.dbRef.current implicitly
-        startSampling(setCounter, setTemperature, setAccuracy,setIconType,setIconVisible ); 
+        startSampling(setCounter, setTemperature, setHumidity,setAccuracy,setIconType,setIconVisible ); 
       }, 500);
 
     } else {
@@ -325,7 +325,7 @@ const handleDeviceDisconnection = async () => {
 //#3 startSampling: Start sampling data from the BLE device
 // This function is called after a successful connection to the BLE device
 
-const startSampling = async (setCounter, setTemperature, setAccuracy, setIconType, setIconVisible) => {
+const startSampling = async (setCounter, setTemperature, setHumidity, setAccuracy, setIconType, setIconVisible) => {
   console.log("🚦//#3 startSampling - Entered startSampling()");
 
   const device = bleState.deviceRef.current;
@@ -391,7 +391,7 @@ const startSampling = async (setCounter, setTemperature, setAccuracy, setIconTyp
           }
 
           // handleLocationUpdate called each time location updates
-          handleLocationUpdate(location, setCounter, setTemperature, setAccuracy, setIconType, setIconVisible);
+          handleLocationUpdate(location, setCounter, setTemperature, setHumidity, setAccuracy, setIconType, setIconVisible);
 
         } catch (err) {
           console.error("❌ Error inside watchPositionAsync callback:", err);
@@ -473,7 +473,7 @@ const parseSensorData = (dataString) => {
 
 
 //#4. handleLocationUpdate: Callback function when location updates in #3
-const handleLocationUpdate = async (location, setCounter, setTemperature, setAccuracy, setIconType, setIconVisible) => {
+const handleLocationUpdate = async (location, setCounter, setTemperature, setHumidity, setAccuracy, setIconType, setIconVisible) => {
   console.log("📍📍📍📍 //#4 handleLocationUpdate:");
 
   try {
@@ -521,8 +521,9 @@ const handleLocationUpdate = async (location, setCounter, setTemperature, setAcc
     // *** MODIFICATION: Parse string for Temp and Humidity ***
     const { temp, humidity } = parseSensorData(decodedValue);
     
-    // Set temp for UI display
-    setTemperature(temp); 
+    
+    setTemperature(temp); // Set temp for UI display
+    setHumidity(humidity); // Set humidity for UI display
 
     const { latitude, longitude, altitude, accuracy, speed } = location.coords;
     const timestamp = Date.now();
@@ -541,7 +542,7 @@ const handleLocationUpdate = async (location, setCounter, setTemperature, setAcc
 
     // *** MODIFICATION: Use parsed humidity value (scaled by 100 for integer storage) ***
     // If humidity was missing in BLE message, variable 'humidity' is 0.0, so humInt becomes 0.
-    const humInt = Math.round(humidity * 1e2); 
+    const humInt = Math.round(humidity); 
     const tempInt = Math.round(temp * 1e2);
     
     const latInt = Math.round(latitude * 1e7);
