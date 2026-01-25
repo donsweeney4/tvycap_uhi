@@ -5,6 +5,10 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import MainScreen from './MainScreen1';
 import SettingsScreen from './Settings1'; // Import the Settings screen
 
+import Toast from 'react-native-toast-message';
+import { toastConfig } from './functionsHelper'; // Import the custom toast configuration
+
+
 if (!__DEV__) {
   console.log = () => {};  // Disable all console logs in production
   console.warn = () => {}; // Disable warnings
@@ -20,7 +24,9 @@ export default function App() {
         <Tab.Screen name="Main" component={MainScreen} />
         <Tab.Screen name="Settings" component={SettingsScreen} />
       </Tab.Navigator>
+      <Toast config={toastConfig} />
     </NavigationContainer>
+    
   );
 }
 

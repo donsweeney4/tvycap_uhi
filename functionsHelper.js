@@ -1,31 +1,28 @@
-import Toast from 'react-native-root-toast';
-import { Dimensions } from 'react-native';
+import React from "react";
+import { View, Text, StyleSheet } from "react-native";
 
-const screenHeight = Dimensions.get('window').height; // Get screen height
+// styles are still needed for toastConfig
+const styles = StyleSheet.create({
+  toastContainer: {
+    // These base styles will be overridden by props.containerStyle when calling showToastAsync
+    width: "90%", // Example width
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  toastText: {
+    // These base styles will be overridden by props.textStyle when calling showToastAsync
+    textAlign: "center",
+  },
+});
 
-export const showToastAsync = (message, duration = 3000) => {
-
-  return new Promise((resolve) => {
-    Toast.show(message, {
-      duration: duration, // Directly use the provided duration
-      position: screenHeight * 0.15, // 15% from the top
-      shadow: true,
-      animation: true,
-      hideOnPress: true,
-      delay: 0,
-      opacity: 1,  // Ensures visibility
-      containerStyle: {
-        backgroundColor: 'blue', // Set toast background color
-        borderRadius: 10, // Optional: Round corners
-        padding: 10,
-      },
-      textStyle: {
-        color: 'yellow',
-        fontSize: 20,
-      },
-    });
-
-    // ✅ Resolve the promise after the provided duration
-    setTimeout(resolve, duration);
-  });
+/**
+ * This configuration should be passed to the <Toast /> component 
+ * at the root of your app (in App.js).
+ */
+export const toastConfig = {
+  customToast: ({ text1, props }) => (
+    <View style={[styles.toastContainer, props.containerStyle]}>
+      <Text style={[styles.toastText, props.textStyle]}>{text1}</Text>
+    </View>
+  ),
 };

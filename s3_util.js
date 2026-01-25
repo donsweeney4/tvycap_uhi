@@ -1,17 +1,26 @@
-// s3_utils.js
-export async function getPresignedS3Url(filename) {
-  // Define requestBody BEFORE logging it
-  const requestBody = JSON.stringify({ filename });
+// s3_util.js -- utility to get presigned S3 URLs
+
+export async function getPresignedS3Url(filename, bucketName) { // --- MODIFIED ---
+  
+  // ---  Add bucketName to the request body ---
+  const requestBody = JSON.stringify({ 
+    filename: filename, 
+    bucket: bucketName  // You can name this key whatever your server expects
+  });
 
   // --- ADD THESE LOGS FOR DEBUGGING ---
-  console.log("DEBUG: Fetch URL:", 'http://mobile.quest-science.net/get_presigned_url'); // Note: was 'http' in your snippet
+  console.log("");
+  console.log("DEBUG: Preparing to fetch presigned S3 URL with the following details:");
+  console.log("DEBUG: Filename:", filename);
+  console.log("DEBUG: Bucket Name:", bucketName);
+  console.log("DEBUG: Fetch URL:", 'https://mobile.quest-science.net/get_presigned_url');
   console.log("DEBUG: Fetch Method:", 'POST');
   console.log("DEBUG: Fetch Headers:", { 'Content-Type': 'application/json' });
-  console.log("DEBUG: Fetch Body (stringified):", requestBody);
-  // --- END DEBUG LOGS ---
+  console.log("DEBUG: Fetch Body (stringified):", requestBody); //
+  console.log(""); 
+  // --- END DEBUG LOGS --
 
   try {
-    // Ensure the URL is correct (http vs https)
     const response = await fetch('https://mobile.quest-science.net/get_presigned_url', {
       method: 'POST',
       headers: {
@@ -21,7 +30,7 @@ export async function getPresignedS3Url(filename) {
     });
 
     if (!response.ok) {
-      // It's good practice to try to read the error body even if not .json()
+      // ... (error handling code remains the same) ...
       let errorDetails = `Server error: ${response.status}`;
       try {
         const errorJson = await response.json();
@@ -38,8 +47,12 @@ export async function getPresignedS3Url(filename) {
       uploadUrl: data.uploadUrl,
       publicUrl: data.publicUrl,
     };
-  } catch (err) {
-    console.error('❌ Error fetching presigned S3 URL:', err);
-    throw err;
-  }
+  } catch (err) { 
+  // Use 'err' to log the error
+  console.error("❌ FAILED TO GET PRESIGNED URL:", err.message); 
+  
+  // Also log the original console.error you had (it was correct)
+  console.error('❌ Error fetching presigned S3 URL:', err);
+  throw err; 
+}
 }

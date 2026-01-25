@@ -1,0 +1,29 @@
+ the app is not coming from the Google Play Store, tyou must give their phone permission to install it. The EAS webpage makes this easy.
+
+Here is what to do on the Android phone:
+
+Open the Link on the phone's web browser (like Chrome).
+
+Tap "Install": The webpage will show your app icon and an "Install" button. Tap it.
+
+See the Security Warning: The phone will immediately show a pop-up that says something like:
+
+"For your security, your phone is not allowed to install unknown apps from this source."
+
+Grant Permission:
+
+The pop-up will have a "Settings" button. Tap it.
+
+It will take you directly to a settings page for the browser (e.g., "Install unknown apps > Chrome").
+
+You just need to flip the switch to "Allow from this source."
+
+Install the App:
+
+Tap the "Back" button to return to the browser.
+
+A new pop-up will appear that says "Do you want to install this application?"
+
+Tap "Install," and the app will install and be added to their app drawer.
+
+You can then find the app icon in the app drawer (by swiping up from their home screen) and drag it to the main screen.

@@ -2,7 +2,7 @@
   "expo": {
     "name": "TVYCAP_UHI",
     "slug": "dwsuhi-xvl-53v1jmdz-tegdkh",
-    "version": "4.1.1",
+    "version": "4.2.1",
     "scheme": "tvycapuhi",
     "developmentClient": {},
     "orientation": "portrait",
@@ -20,7 +20,8 @@
         {
           "locationWhenInUsePermission": "Allow location access while using the app."
         }
-      ]
+      ],
+      "expo-asset"
     ],
     "ios": {
       "supportsTablet": true,

@@ -12,57 +12,163 @@ import * as FileSystem from "expo-file-system";
 import * as SecureStore from "expo-secure-store";
 import { Button } from 'react-native-elements';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import Toast from 'react-native-root-toast';
-
 import { bleState } from "./utils/bleState";
 import { handleStart, stopSampling, confirmAndClearDatabase } from "./functions";
-import { uploadDatabaseToS3 } from "./functionsS3";
-import { showToastAsync } from "./functionsHelper";
+import { uploadDataIfAllowed, uploadDDataIfAllowed} from "./functionsS3";
+import { showToastAsync } from "./dbUtils";
 import { VERSION } from "./constants";
+import { setSimulationEnabled } from "./utils/ble";
+
 
 export default function MainScreen1() {
   const [deviceName, setDeviceName] = useState(null);
   const [counter, setCounter] = useState(0);
   const [temperature, setTemperature] = useState(NaN);
+  const [humidity, setHumidity] = useState(NaN);
   const [accuracy, setAccuracy] = useState(NaN);
   const [dummyState, setDummyState] = useState(0);
   const [iconType, setIconType] = useState(null);
   const [iconVisible, setIconVisible] = useState(false);
+  const [locationValue, setLocationValue] = useState(null);
+
+  // Hidden unlock for Simulation Mode
+  const [tapCount, setTapCount] = useState(0);
+  const [simUnlocked, setSimUnlocked] = useState(false);
+
+ 
+/*
+
+LocationIdRef
+
+What it is: A ref holding the selected location identifier for the current campaign.
+How it's created (in MainScreen1.js): It's built when the main screen is loaded,
+using values from SecureStore and the loaded locations.json file.
+Format: A string matching one of the location IDs from locations.json (e.g., uhi-livermore).
+Example Value: uhi-livermore
+Another Example: uhi-pleasanton
+
+Purpose (in functionsS3.js): It is used as the S3 bucket name where the data file 
+will be uploaded.
+
+LocationLabel
+
+What it is: A state variable holding the human-readable label of the selected location.
+How it's created (in MainScreen1.js): It's set when the main screen loads, based on the selectedLocationId and the loaded locations.json file.
+Format: A string representing the location's label (e.g., "Livermore Downtown Park").
+Example Value: Livermore Downtown Park
+Another Example: Pleasanton Community Park
+
+Purpose: It is displayed on the main screen to inform the user of the current data collection location.
+
+
+CampaignNameRef
+
+What it is: A string representing the name of the current data collection campaign.
+How it's created (in MainScreen1.js): It's retrieved from SecureStore when the main screen loads.
+Format: A user-defined string (e.g., LivermoreHeat).
+Example Value: LivermoreHeat
+Another Example: PleasantonPark
+
+deviceNameRef 
+
+What it is: A ref holding the unique, permanent identifier for the sensor.
+How it's created (in MainScreen1.js): It's built when the main screen loads, using values from SecureStore.
+Format: [CampaignName]_[SensorNumber]
+Example Value: LivermoreHeat_007
+Another Example: PleasantonPark_012. --> campaignName = PleasantonPark, l campaignSensorNumber = 12
+Purpose (in functionsS3.js): It is used to create the final filename for the file uploaded to S3 (e.g., LivermoreHeat_007.csv). 
+
+
+jobcodeRef
+
+What it is: A ref holding a unique identifier for a single data collection session. It's created every time the main screen is focused.
+How it's created (in MainScreen1.js): It combines the deviceNameRef's value with the current date and time.
+Format: [deviceNameRef value]-[DateTime]
+Example Value: LivermoreHeat_uhi-007-20251020183015
+Another Example: PleasantonPark_012-20251105120030. --> deviceName = PleasantonPark_012, DateTime = 2025-11-05 12:00:3015
+Purpose (in functionsS3.js): It serves two key functions:
+Database Tagging: It's written into the jobcode column for every single row of data in the database. This groups all the data points from one session together.
+Temporary Filename: It's used as the name for the temporary .csv file that is created in your app's cache before being uploaded. 
+
+*/
+
 
   const navigation = useNavigation();
   const deviceNameRef = useRef(null);
   const jobcodeRef = useRef(null);
+  const locationIdRef = useRef(null);
   const redirectedRef = useRef(false);
 
   const { width, height } = Dimensions.get("window");
   const logoWidth = width * 0.15;
   const logoHeight = height * 0.15;
 
+
+const loadLocations = async () => {
+  const locationsUrl = "https://uhi-locations.s3.us-west-2.amazonaws.com/locations.json";
+  try {
+    const response = await fetch(locationsUrl);
+    if (!response.ok) {
+      console.error(`[MainScreen] Fetch failed with status: ${response.status}`);
+      throw new Error(`Failed to fetch locations: ${response.status}`);
+    }
+    const parsedLocations = await response.json();
+    console.log("✅ [MainScreen] Locations data received from S3.");
+    return parsedLocations; // <-- Return the data
+  } catch (error) {
+    console.error("❌ [MainScreen] Error in loadLocations function:", error);
+    return []; // <-- Return an empty array on failure
+  }
+};
+
+
+
+
+
+// On focus, load settings and also reflect persisted Simulation Mode state
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", async () => {
       console.log("MainScreen L1: Focus event triggered");
       try {
+        // --- MODIFIED: Load locations AND settings ---
+        const loadedLocations = await loadLocations(); // <-- ADD THIS
         const campaignName = await SecureStore.getItemAsync("campaignName");
         const campaignSensorNumber = await SecureStore.getItemAsync("campaignSensorNumber");
         const pairedSensorName = await SecureStore.getItemAsync("pairedSensorName");
-
-        console.log("📦 Focused: retrieved settings:", {
-          campaignName,
-          campaignSensorNumber,
-          pairedSensorName
-        });
+        const storedLocationId = await SecureStore.getItemAsync("selectedLocationId");
+        
+        console.log(
+          `📦 Focused: retrieved settings:
+          campaignName: ${campaignName}
+          campaignSensorNumber: ${campaignSensorNumber}
+          pairedSensorName: ${pairedSensorName}
+          storedLocationId: ${storedLocationId}`
+        );
 
         if (
           campaignName?.trim() &&
           campaignSensorNumber?.trim() &&
-          pairedSensorName?.trim()
+          storedLocationId?.trim()
         ) {
           const paddedSensorNumber = campaignSensorNumber.padStart(3, "0");
+          const locationId = storedLocationId; 
+          
+          
+         
+          const locationObj = loadedLocations.find(loc => loc.value === locationId);
+          const locationLabel = locationObj ? locationObj.label : locationId; // Fallback to the ID
+          
+          setLocationValue(locationLabel); // <-- Set the found label
+        
+
           const fullDeviceName = `${campaignName}_${paddedSensorNumber}`;
+          
           setDeviceName(fullDeviceName);
           deviceNameRef.current = fullDeviceName;
+          locationIdRef.current = locationId;
 
           const currentDateTime = new Date()
+
             .toLocaleString("sv-SE", { timeZoneName: "short" })
             .replace(/[:\-.TZ]/g, "")
             .slice(0, 15);
@@ -75,19 +181,24 @@ export default function MainScreen1() {
           if (!redirectedRef.current) {
             redirectedRef.current = true;
             console.warn("⚠️ Missing info. Redirecting to settings.");
-            await showToastAsync("Missing campaign info. Redirecting to Settings...", 3000);
+            await showToastAsync("Missing campaign/location info. Redirecting to Settings...", 3000);
             navigation.navigate("Settings");
           }
         }
       } catch (error) {
         console.error("❌ Error loading settings:", error);
       }
+      setSimUnlocked(false); // always start off when the screen is focused
+    
     });
 
     return unsubscribe;
-  }, [navigation]);
+  }, [navigation]); // <--  We don't need to add `locations` to the dependency array
 
- 
+
+
+
+
 
   useEffect(() => {
     console.log("MainScreen L4: Setting dummyState for bleState");
@@ -97,18 +208,51 @@ export default function MainScreen1() {
     if (!bleState.dbRef) bleState.dbRef = { current: null };
   }, []);
 
+  // Hidden unlock: tap Version text 7 times to enable Simulation Mode
+  const onVersionTap = async () => {
+    if (simUnlocked) return; // already unlocked
+    const n = tapCount + 1;
+    setTapCount(n);
+    if (n >= 7) {
+       setSimulationEnabled(true); // enables sim for this session
+       showToastAsync("✅ Simulation Mode enabled", 2000);
+}
+  };
+
   useKeepAwake();
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>TriValley Youth</Text>
-      <Text style={styles.header}>Climate Action Program</Text>
-      <Text style={styles.title}>UHI Sensor</Text>
-      <Text style={styles.version}>Version: {VERSION}</Text>
+      <Text style={styles.header}>Climate Action Program </Text>
+      <Text style={styles.header}>Heat Island Mapping for:</Text>
+      {/* === MODIFIED LINE BELOW === */}
+      <Text style={styles.title}>{locationValue || '(no location)'}</Text>
+
+      {/* Tap 7× on Version to unlock Simulation Mode */}
+      <Text style={styles.version} onPress={onVersionTap}>
+        Version: {VERSION}
+      </Text>
+
+      {simUnlocked && (
+        <Text style={{ fontSize: 14, color: "green", marginBottom: 6 }}>
+          Simulation Mode Enabled
+        </Text>
+      )}
 
       <Text style={styles.status}>
+        Location: {locationValue || "(no location)"}{"\n"} 
         Sensor: {deviceName || "(no name)"}{"\n"}
-        Temperature: {isNaN(temperature) ? "--" : `${(temperature * 9/5 + 32).toFixed(2)}°F`} {"\n"}
+        Temperature: {isNaN(temperature) 
+        ? "--" 
+         : `${(temperature * 9/5 + 32).toFixed(2)}°F,  `
+        }
+        Humidity: {
+        isNaN(humidity)
+        ? "--"
+      : humidity === 0
+      ? "none"
+      : `${humidity.toFixed(2)}%`
+}{"\n"}
         GPS Accuracy: {isNaN(accuracy) ? "--" : `${accuracy}m`}
       </Text>
 
@@ -121,13 +265,14 @@ export default function MainScreen1() {
         titleStyle={{ color: 'yellow' }}
         onPress={() => {
           if (!deviceNameRef.current) {
-            showToastAsync("❌ Device name missing. Check settings.", 3000);
+            showToastAsync("❌ Settings information missing. Check settings.", 3000);
             return;
           }
           handleStart(
             deviceNameRef.current,
             setCounter,
             setTemperature,
+            setHumidity,
             setAccuracy,
             setIconType,
             setIconVisible
@@ -157,12 +302,22 @@ export default function MainScreen1() {
         buttonStyle={{ backgroundColor: 'blue', borderRadius: 10 }}
         titleStyle={{ color: 'yellow' }}
         onPress={() => {
-          if (!deviceNameRef.current || !jobcodeRef.current) {
+          console.log(
+            `[Upload Button] Checking refs: locationIdRef.current = ${locationIdRef.current}`
+          );
+          if (!deviceNameRef.current || !jobcodeRef.current || !locationIdRef.current) {
             showToastAsync("❌ Missing metadata. Cannot upload.", 3000);
             return;
           }
           const currentDbFilePath = `${FileSystem.documentDirectory}SQLite/appData.db`;
-          uploadDatabaseToS3(currentDbFilePath, jobcodeRef, deviceNameRef);
+
+
+          const dataBucket = locationIdRef.current; 
+          console.log(`[Upload] Using data bucket: ${dataBucket}`);
+
+
+
+          uploadDataIfAllowed(currentDbFilePath, jobcodeRef, deviceNameRef, dataBucket); // Pass it
         }}
       />
 
@@ -180,8 +335,6 @@ export default function MainScreen1() {
         }}
       />
 
-      
-
       <Image
         source={require("./assets/icon.png")}
         style={[styles.logo, { width: logoWidth, height: logoHeight }]}
@@ -189,30 +342,23 @@ export default function MainScreen1() {
       />
       <Text style={styles.questname}>Quest Science Center{"\n"}Livermore, CA</Text>
 
-      {/* Moved icon display to end to avoid toast overlap */}
-
-    
-    {iconVisible && (
-  <View style={styles.iconContainer}>
-    {iconType === 'red' && (
-      <>
-        
-        <Text style={styles.errorText}>Temperature sensor not connected!</Text>
-         <Text style={styles.errorText}>Push start to try to reconnect & resume!</Text>
-        <Icon name="error" size={50} color="red" />
-      </>
-    )}
-    {iconType === 'green' && (
-      <>
-      <Text style={styles.errorText}>Data sample saved!</Text>
-      <Icon name="check-circle" size={50} color="green" />
-      </>
-    )}
-  </View>
-)}
-
-      
-
+      {iconVisible && (
+        <View style={styles.iconContainer}>
+          {iconType === 'red' && (
+            <>
+              <Text style={styles.errorText}>Temperature sensor not connected!</Text>
+              <Text style={styles.errorText}>Push start to try to reconnect & resume!</Text>
+              <Icon name="error" size={50} color="red" />
+            </>
+          )}
+          {iconType === 'green' && (
+            <>
+              <Text style={styles.errorText}>Data sample saved!</Text>
+              <Icon name="check-circle" size={50} color="green" />
+            </>
+          )}
+        </View>
+      )}
     </View>
   );
 }
@@ -235,7 +381,8 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 36,
     marginBottom: 7,
-    color: "blue",
+    // === MODIFIED LINE BELOW ===
+    color: "red", 
     fontWeight: "bold"
   },
   temperature: {
@@ -282,5 +429,12 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     marginBottom: 20,
     alignItems: "center",
-  }
+  },
+  // added to avoid undefined style reference
+  errorText: {
+    fontSize: 16,
+    color: "black",
+    marginBottom: 4,
+    textAlign: "center",
+  },
 });

@@ -14,3 +14,4 @@ export const bleState = {
   dbRef: { current: null }, // <-- New: Add a ref for your database instance
 };
 
+
