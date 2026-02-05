@@ -214,14 +214,16 @@ export const ConnectToPairedSensor = async (scanTimeout = 10000) => {
             return reject(error);
           }
 
-          if (device?.name) {
-            console.log("🛰 Found device:", device.name, device.id);
+          const deviceDisplayName = device?.localName || device?.name || "";
+
+          if (deviceDisplayName) {
+            console.log("🛰 Found device:", deviceDisplayName, device.id);
           } else {
             console.log("🛰 Found unnamed device:", device?.id);
           }
 
-          if (device?.name === storedName) {
-            console.log(`🎯 Match found: ${device.name}`);
+          if (deviceDisplayName === storedName) {
+            console.log(`🎯 Match found: ${deviceDisplayName}`);
             isMatchingInProgress = true;
 
             try {
