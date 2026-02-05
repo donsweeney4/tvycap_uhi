@@ -157,7 +157,10 @@ export const uploadDatabaseToS3 = async (dbFilePath, jobcodeRef, deviceNameRef, 
 
    const { uploadUrl, publicUrl } = await getPresignedS3Url(uploadFilename, bucketName);
 
-    const uploadResponse = await fetch(uploadUrl, {
+    // Use regional S3 endpoint to avoid 307 redirects that break React Native fetch on PUT
+    const regionalUploadUrl = uploadUrl.replace('.s3.amazonaws.com', '.s3.us-west-2.amazonaws.com');
+
+    const uploadResponse = await fetch(regionalUploadUrl, {
       method: 'PUT',
       headers: {
         'Content-Type': 'text/csv',
