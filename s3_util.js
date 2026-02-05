@@ -30,13 +30,12 @@ export async function getPresignedS3Url(filename, bucketName) { // --- MODIFIED 
     });
 
     if (!response.ok) {
-      // ... (error handling code remains the same) ...
+      const rawText = await response.text();
       let errorDetails = `Server error: ${response.status}`;
       try {
-        const errorJson = await response.json();
+        const errorJson = JSON.parse(rawText);
         errorDetails = `Server error: ${response.status} - ${errorJson.error || JSON.stringify(errorJson)}`;
       } catch (parseErr) {
-        const rawText = await response.text();
         errorDetails = `Server error: ${response.status} - Raw response: ${rawText}`;
       }
       throw new Error(errorDetails);
