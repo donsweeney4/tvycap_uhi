@@ -87,6 +87,43 @@ dwsTVYCAP_UHI/
 - Keep credentials in `credentials.json` (ensure it's in `.gitignore`)
 - Handle errors gracefully with user-friendly messages
 
+### Adding a New Campaign Location
+
+Locations are managed entirely via a JSON file on S3 — **no app code changes or rebuilds are needed**.
+
+**Source file**: `locations.json` in the `uhi-locations` S3 bucket
+**URL**: `https://uhi-locations.s3.us-west-2.amazonaws.com/locations.json`
+**Used by**: `Settings1.js` (dropdown picker) and `MainScreen1.js` (display + S3 upload bucket)
+
+**Current format** — array of `{ label, value }` objects:
+```json
+[
+  { "label": "Livermore, CA", "value": "uhi-livermore" },
+  { "label": "Tracy, CA", "value": "uhi-tracy" },
+  { "label": "Pleasanton, CA", "value": "uhi-pleasanton" },
+  { "label": "Livermore High School, Livermore, CA", "value": "uhi-livermore-high-school" },
+  { "label": "Granada High School, Livermore, CA", "value": "uhi-granada-high-school" },
+  { "label": "Amador Valley High School, Pleasanton, CA", "value": "uhi-amador-valley-high-school" },
+  { "label": "John C. Kimball High School, Tracy, CA", "value": "uhi-john-c-kimball-high-school" }
+]
+```
+
+**Steps to add a new location:**
+
+1. **Download** the current `locations.json` from the `uhi-locations` S3 bucket
+2. **Add** a new entry:
+   - `label` — Human-readable name shown in the app dropdown (e.g., `"Dublin, CA"`)
+   - `value` — Unique ID that also serves as the **S3 data bucket name** (e.g., `"uhi-dublin"`)
+3. **Upload** the updated `locations.json` back to the `uhi-locations` S3 bucket
+4. **Create an S3 bucket** with the exact name matching the `value` field (e.g., `uhi-dublin`)
+5. **Configure IAM permissions** so the app's credentials can write to the new bucket
+
+**Important notes:**
+- The `value` field is used directly as the S3 bucket name for data uploads (`MainScreen1.js` line 315: `const dataBucket = locationIdRef.current`)
+- Follow the naming convention: lowercase, prefixed with `uhi-`, hyphens between words
+- The app fetches locations at runtime, so changes take effect immediately (no rebuild needed)
+- Verify the new location appears in the Settings dropdown after uploading
+
 ### Testing
 - Test location services using `LocationTestScreen.js`
 - Verify BLE functionality on physical devices (BLE doesn't work in simulators)
