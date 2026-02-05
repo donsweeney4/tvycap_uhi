@@ -817,9 +817,9 @@ export const GetPairedSensorName = async (scanTimeout = 10000) => {
               return;
             }
 
-            const name = device?.name || "";
+            const name = device?.localName || device?.name || "";
             const id = device?.id || "(no id)";
-            console.log("🔎 Found device:", `"${name}"`, "ID:", id);
+            console.log("🔎 Found device:", `"${name}"`, "ID:", id, "(localName:", device?.localName, ", name:", device?.name, ")");
 
             const questPattern = /^[qQ]uest.*/;
 
