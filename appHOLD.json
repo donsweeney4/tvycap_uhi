@@ -1,0 +1,59 @@
+{
+  "expo": {
+    "name": "TVYCAP_UHI",
+    "slug": "dwsuhi-xvl-53v1jmdz-tegdkh",
+    "version": "4.2.1",
+    "scheme": "tvycapuhi",
+    "developmentClient": {},
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow location access while using the app."
+        }
+      ],
+      "expo-asset"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "org.quest-science.BLEScanner",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "This app needs access to your location to provide BLE scanning and logging.",
+        "NSBluetoothAlwaysUsageDescription": "This app uses Bluetooth to scan for nearby devices and read sensor data.",
+        "NSBluetoothPeripheralUsageDescription": "This app needs to connect to BLE devices to read sensor values.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "BLUETOOTH",
+        "BLUETOOTH_ADMIN",
+        "BLUETOOTH_SCAN",
+        "BLUETOOTH_CONNECT",
+        "BLUETOOTH_ADVERTISE",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ],
+      "package": "org.questscience.BLEScanner"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "ffee136a-7a4e-493c-8424-c3cb255be380"
+      }
+    }
+  }
+}

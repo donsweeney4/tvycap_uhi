@@ -14,22 +14,26 @@
     },
     "preview": {
       "distribution": "internal",
+      "autoIncrement": true,
       "android": {
-        "buildType": "apk"  // For direct APK sharing/testing outside Play Store
+        "buildType": "apk",
+        "image": "latest"
       },
-      "ios": {}
+      "ios": {
+        "distribution": "store",
+        "image": "latest"
+      }
     },
     "production": {
       "distribution": "store",
+      "autoIncrement": true,
       "android": {
-          "image": "latest",
-          "buildType": "app-bundle",  // Use app-bundle for Play Store
-          "autoIncrement": true
-        },
-      
+        "image": "latest",
+        "buildType": "app-bundle"
+      },
       "ios": {
         "distribution": "store",
-        "autoIncrement": true,
+        "image": "latest",
         "simulator": false
       }
     },
@@ -44,16 +48,15 @@
       }
     },
     "development-simulator": {
-      developmentClient: true,
-      distribution: "internal",
-      ios: {
-        simulator: true
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": {
+        "simulator": true
       },
-      environment: "development"
+      "environment": "development"
     }
   },
   "submit": {
     "production": {}
   }
 }
-

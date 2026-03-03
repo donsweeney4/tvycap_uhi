@@ -3,53 +3,58 @@
     "name": "TVYCAP_UHI",
     "slug": "dwsuhi-xvl-53v1jmdz-tegdkh",
     "version": "4.2.1",
-    "scheme": "tvycapuhi",
-    "developmentClient": {},
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "plugins": [
-      [
-        "expo-location",
-        {
-          "locationWhenInUsePermission": "Allow location access while using the app."
-        }
-      ],
-      "expo-asset"
+    "assetBundlePatterns": [
+      "**/*"
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "org.quest-science.BLEScanner",
+      "bundleIdentifier": "org.quest-science.tvycap-uhi",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "This app needs access to your location to provide BLE scanning and logging.",
-        "NSBluetoothAlwaysUsageDescription": "This app uses Bluetooth to scan for nearby devices and read sensor data.",
-        "NSBluetoothPeripheralUsageDescription": "This app needs to connect to BLE devices to read sensor values.",
-        "ITSAppUsesNonExemptEncryption": false
+        "NSBluetoothAlwaysUsageDescription": "This app uses Bluetooth to connect to CSV_Streamer sensors for urban heat mapping.",
+        "NSBluetoothPeripheralUsageDescription": "This app uses Bluetooth to discover and connect to heat sensors.",
+        "NSLocationWhenInUseUsageDescription": "This app records GPS coordinates to map temperature data points across Livermore.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "This app requires location access to map heat data even when the screen is off during collection."
       }
     },
     "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "org.questscience.tvycap_uhi",
       "permissions": [
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION",
         "BLUETOOTH",
         "BLUETOOTH_ADMIN",
         "BLUETOOTH_SCAN",
         "BLUETOOTH_CONNECT",
-        "BLUETOOTH_ADVERTISE",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE"
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
+    },
+    "plugins": [
+      [
+        "react-native-ble-plx",
+        {
+          "isBackgroundEnabled": false,
+          "modes": ["central"],
+          "bluetoothAlwaysPermission": "Allow TVYCAP_UHI to connect to sensors."
+        }
       ],
-      "package": "org.questscience.BLEScanner"
-    },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    },
+      [
+        "expo-location",
+        {
+          "locationAlwaysPermission": "Allow TVYCAP_UHI to use your location to map heat islands."
+        }
+      ]
+    ],
     "extra": {
       "eas": {
         "projectId": "ffee136a-7a4e-493c-8424-c3cb255be380"
