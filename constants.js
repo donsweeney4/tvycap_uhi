@@ -1,5 +1,6 @@
 // constants.js
 export const VERSION = "4.2.1";
+export const BUILD_NUMBER = "41";
 
 export const LOCATION_TASK_NAME = "background-location-task";
 

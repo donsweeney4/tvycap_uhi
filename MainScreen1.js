@@ -17,7 +17,7 @@ import { bleState } from "./utils/bleState";
 import { handleStart, stopSampling, confirmAndClearDatabase } from "./functions";
 import { uploadDataIfAllowed, uploadDDataIfAllowed} from "./functionsS3";
 import { showToastAsync } from "./dbUtils";
-import { VERSION } from "./constants";
+import { VERSION, BUILD_NUMBER } from "./constants";
 import { setSimulationEnabled } from "./utils/ble";
 
 
@@ -232,7 +232,7 @@ const loadLocations = async () => {
 
       {/* Tap 7× on Version to unlock Simulation Mode */}
       <Text style={styles.version} onPress={onVersionTap}>
-        Version: {VERSION}
+        Version: {VERSION}  Build: {BUILD_NUMBER}
       </Text>
 
       {simUnlocked && (
