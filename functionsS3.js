@@ -1,5 +1,5 @@
 import { getPresignedS3Url } from './s3_util'; 
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as SQLite from 'expo-sqlite'; // Needed for the type, but openDatabaseConnection should handle actual DB operations
 import { Alert, Platform } from 'react-native';
 
@@ -157,6 +157,9 @@ export const uploadDatabaseToS3 = async (dbFilePath, jobcodeRef, deviceNameRef, 
 
    const { uploadUrl, publicUrl } = await getPresignedS3Url(uploadFilename, bucketName);
 
+    console.log("DEBUG uploadUrl from server:", uploadUrl);
+    console.log("DEBUG publicUrl from server:", publicUrl);
+
     // Use regional S3 endpoint to avoid 307 redirects that break React Native fetch on PUT
     const regionalUploadUrl = uploadUrl.replace('.s3.amazonaws.com', '.s3.us-west-2.amazonaws.com');
 
@@ -168,8 +171,10 @@ export const uploadDatabaseToS3 = async (dbFilePath, jobcodeRef, deviceNameRef, 
       body: fileContent,
     });
 
+    console.log("DEBUG S3 PUT response status:", uploadResponse.status);
     if (!uploadResponse.ok) {
-      throw new Error(`Upload failed with status ${uploadResponse.status}`);
+      const body = await uploadResponse.text();
+      throw new Error(`Upload failed with status ${uploadResponse.status}: ${body}`);
     }
 
     console.log("✅ Upload of .csv data to AWS successful:", uploadFilename);

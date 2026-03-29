@@ -2,7 +2,7 @@
 // Runtime switch between real BleManager and the mock, WITHOUT persistence.
 // The sim flag lives in bleState so any screen can toggle it for the current session only.
 
-import { BleManager } from "react-native-ble-plx";
+import { BleManager } from "@sfourdrinier/react-native-ble-plx";
 import { bleState } from "./bleState";
 import { MockBleManager } from "./bleMockManager";
 

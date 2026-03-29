@@ -7,11 +7,12 @@ import {
   Dimensions,
   Image,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
-import * as FileSystem from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
 import * as SecureStore from "expo-secure-store";
 import { Button } from 'react-native-elements';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+import { MaterialIcons as Icon } from '@expo/vector-icons';
 import { bleState } from "./utils/bleState";
 import { handleStart, stopSampling, confirmAndClearDatabase } from "./functions";
 import { uploadDataIfAllowed, uploadDDataIfAllowed} from "./functionsS3";
@@ -220,9 +221,10 @@ const loadLocations = async () => {
   };
 
   useKeepAwake();
+  const insets = useSafeAreaInsets();
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top || height * 0.05, paddingBottom: insets.bottom }]}>
       <Text style={styles.header}>Climate Action Program </Text>
       <Text style={styles.header}>Heat Island Mapping for:</Text>
       {/* === MODIFIED LINE BELOW === */}
@@ -337,10 +339,10 @@ const loadLocations = async () => {
 
       <Image
         source={require("./assets/icon.png")}
-        style={[styles.logo, { width: logoWidth, height: logoHeight }]}
+        style={[styles.logo, { width: logoWidth, height: logoHeight, bottom: insets.bottom }]}
         resizeMode="contain"
       />
-      <Text style={styles.questname}>Quest Science Center{"\n"}Livermore, CA</Text>
+      <Text style={[styles.questname, { bottom: insets.bottom }]}>Quest Science Center{"\n"}Livermore, CA</Text>
 
       {iconVisible && (
         <View style={styles.iconContainer}>
@@ -363,14 +365,12 @@ const loadLocations = async () => {
   );
 }
 
-const { width, height } = Dimensions.get("window");
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#eef",
     alignItems: "center",
     justifyContent: "flex-start",
-    paddingTop: height * 0.05,
   },
   header: {
     fontSize: 20,

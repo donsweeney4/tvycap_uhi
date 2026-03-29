@@ -11,6 +11,7 @@ import {
   Platform,
   StyleSheet,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import * as SecureStore from "expo-secure-store";
 import { useNavigation } from "@react-navigation/native";
@@ -33,6 +34,7 @@ export default function SettingsScreen() {
   const [counter, setCounter] = useState(0); 
 
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
 
   /*
    * Loads and parses the locations.json file from the S3 bucket.
@@ -201,7 +203,7 @@ export default function SettingsScreen() {
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <ScrollView 
           // Use the new style, which includes paddingBottom
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(50, insets.bottom + 20) }]}
           showsVerticalScrollIndicator={false}
         >
           {/* Pair New Sensor Button */}
@@ -294,10 +296,9 @@ const styles = StyleSheet.create({
   },
   // CORRECTED: Use this for contentContainerStyle
   scrollContent: {
-    flexGrow: 1, 
-    justifyContent: "center", 
-    alignItems: "center", 
-    paddingBottom: 50, // CRITICAL: Adds space at the bottom to ensure the last input can scroll up
+    flexGrow: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
   label: {
     fontSize: 18,

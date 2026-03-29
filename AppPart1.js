@@ -2,6 +2,7 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import MainScreen from './MainScreen1';
 import SettingsScreen from './Settings1'; // Import the Settings screen
 
@@ -19,14 +20,15 @@ const Tab = createBottomTabNavigator();
 
 export default function App() {
   return (
-    <NavigationContainer>
-      <Tab.Navigator>
-        <Tab.Screen name="Main" component={MainScreen} />
-        <Tab.Screen name="Settings" component={SettingsScreen} />
-      </Tab.Navigator>
-      <Toast config={toastConfig} />
-    </NavigationContainer>
-    
+    <SafeAreaProvider>
+      <NavigationContainer>
+        <Tab.Navigator>
+          <Tab.Screen name="Main" component={MainScreen} />
+          <Tab.Screen name="Settings" component={SettingsScreen} />
+        </Tab.Navigator>
+        <Toast config={toastConfig} />
+      </NavigationContainer>
+    </SafeAreaProvider>
   );
 }
 

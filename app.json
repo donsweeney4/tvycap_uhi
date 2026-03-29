@@ -21,7 +21,8 @@
         "NSBluetoothAlwaysUsageDescription": "This app uses Bluetooth to connect to CSV_Streamer sensors for urban heat mapping.",
         "NSBluetoothPeripheralUsageDescription": "This app uses Bluetooth to discover and connect to heat sensors.",
         "NSLocationWhenInUseUsageDescription": "This app records GPS coordinates to map temperature data points across Livermore.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "This app requires location access to map heat data even when the screen is off during collection."
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "This app requires location access to map heat data even when the screen is off during collection.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -39,12 +40,15 @@
         "ACCESS_COARSE_LOCATION"
       ]
     },
+    "newArchEnabled": true,
     "plugins": [
       [
-        "react-native-ble-plx",
+        "@sfourdrinier/react-native-ble-plx",
         {
           "isBackgroundEnabled": false,
-          "modes": ["central"],
+          "modes": [
+            "central"
+          ],
           "bluetoothAlwaysPermission": "Allow TVYCAP_UHI to connect to sensors."
         }
       ],
@@ -53,7 +57,11 @@
         {
           "locationAlwaysPermission": "Allow TVYCAP_UHI to use your location to map heat islands."
         }
-      ]
+      ],
+      "expo-asset",
+      "expo-mail-composer",
+      "expo-secure-store",
+      "expo-sqlite"
     ],
     "extra": {
       "eas": {
