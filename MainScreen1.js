@@ -6,6 +6,7 @@ import {
   View,
   Dimensions,
   Image,
+  Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
@@ -17,7 +18,8 @@ import { bleState } from "./utils/bleState";
 import { handleStart, stopSampling, confirmAndClearDatabase } from "./functions";
 import { uploadDataIfAllowed, uploadDDataIfAllowed} from "./functionsS3";
 import { showToastAsync } from "./dbUtils";
-import { VERSION, BUILD_NUMBER } from "./constants";
+import { VERSION, IOS_BUILD_NUMBER, ANDROID_VERSION_CODE } from "./constants";
+const BUILD_NUMBER = Platform.OS === "ios" ? IOS_BUILD_NUMBER : ANDROID_VERSION_CODE;
 import { setSimulationEnabled } from "./utils/ble";
 
 
