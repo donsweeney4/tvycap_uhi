@@ -228,9 +228,11 @@ const loadLocations = async () => {
   return (
     <View style={[styles.container, { paddingTop: insets.top || height * 0.05, paddingBottom: insets.bottom }]}>
       <Text style={styles.header}>Climate Action Program </Text>
-      <Text style={styles.header}>Heat Island Mapping for:</Text>
-      {/* === MODIFIED LINE BELOW === */}
-      <Text style={styles.title}>{locationValue || '(no location)'}</Text>
+      <Text style={styles.header}>Heat Island Mapping</Text>
+      {/* Hidden on Android to prevent bottom overflow */}
+      {Platform.OS !== 'android' && (
+        <Text style={styles.title}>{locationValue || '(no location)'}</Text>
+      )}
 
       {/* Tap 7× on Version to unlock Simulation Mode */}
       <Text style={styles.version} onPress={onVersionTap}>
