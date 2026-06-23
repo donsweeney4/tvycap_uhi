@@ -44,3 +44,7 @@ build/
 
 # TypeScript
 *.tsbuildinfo
+
+# Archive/backup files
+*HOLD*
+*BACKUP*
